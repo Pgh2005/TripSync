@@ -3,43 +3,117 @@
 *.log
 *.pyc
 *.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+*.swo
+*.swn
+*.bak
+*.orig
+*.tmp
+*.temp
+*.DS_Store
+*.atom
+*.lock
 
-# IntelliJ related
+# IntelliJ / Android Studio / VS Code IDE
 *.iml
 *.ipr
 *.iws
 .idea/
+.classpath
+.project
+.settings/
+.vscode/
+*.code-workspace
+*.sublime-*
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# Flutter/Dart/Pub
 **/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
-/coverage/
+/ios/Flutter/.last_build_id
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/ephemeral/
+/ios/Flutter/app.flx
+/ios/Flutter/app.zip
+/ios/Flutter/flutter_assets/
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.*
+/android/local.properties
+/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 
-# Symbolication related
-app.*.symbols
+# Web
+/build/web/
+/lib/generated_plugin_registrant.dart
 
-# Obfuscation related
-app.*.map.json
+# Mac
+*.dSYM
+*.dSYM.zip
+*.gcno
+*.gcda
+**/.DS_Store
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# iOS
+**/ios/**/*.hmap
+**/ios/**/*.part
+**/ios/**/*.moved-aside
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Podfile.lock
+
+# Android
+**/android/local.properties
+**/android/**/*.iml
+**/android/**/*.kt
+**/android/**/*.class
+**/android/**/*.dex
+**/android/**/*.log
+**/android/**/*.trace
+**/android/.gradle/
+**/android/app/src/main/debug/
+**/android/app/src/main/profile/
+**/android/app/src/main/res/raw/keep.xml
+**/android/captures/
+**/android/gradle-app.setting
+
+# Supabase (local)
+**/.supabase/
+**/supabase/.temp
+supabase/key.json
+supabase/seed.sql
+
+# Environment variables (API keys, secrets)
+.env
+.env.local
+.env.production
+keys.dart
+secrets.dart
+**/keys.properties
+
+# Coverage / Test
+**/coverage/
+**/test/.test_coverage.dart
+**/test/.test_coverage.dart.js
+**/test/.test_coverage.dart.js.deps
+**/lcov.info
+
+# Diagnostic reports
+problem-reports.html
+analysis_options.yaml.orig
+
+# Gradle wrapper (optional)
+/gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
