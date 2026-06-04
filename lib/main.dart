@@ -32,10 +32,7 @@ class MyApp extends StatelessWidget {
         body: Center(
           child: Text(
             "تریپ سینک",
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
         ),
       ),
