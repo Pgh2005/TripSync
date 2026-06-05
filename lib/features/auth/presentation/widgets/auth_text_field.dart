@@ -10,6 +10,7 @@ class AuthTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final bool? isRtl;
 
   const AuthTextField({
     super.key,
@@ -22,6 +23,7 @@ class AuthTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.isRtl,
   });
 
   @override
@@ -52,7 +54,7 @@ class AuthTextField extends StatelessWidget {
           obscureText: obscureText,
           keyboardType: keyboardType,
           textDirection: TextDirection.ltr,
-          textAlign: TextAlign.left,
+          textAlign: isRtl == true ? TextAlign.right : TextAlign.left,
           validator: validator,
           style: const TextStyle(
             fontSize: 15,

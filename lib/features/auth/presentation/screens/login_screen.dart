@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/features/auth/presentation/widgets/auth_hero.dart';
 import 'dart:ui';
 
 import 'package:tripsync/features/auth/presentation/widgets/login_form.dart';
@@ -117,13 +117,13 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
-                        vertical: 32,
+                        vertical: 20,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildHeroSection(),
-                          const SizedBox(height: 36),
+                          AuthHero(imageSize: 145),
+                          const SizedBox(height: 150),
                           LoginForm(
                             onLogin: _handleLogin,
                             isLoading: _isLoading,
@@ -140,46 +140,6 @@ class _LoginScreenState extends State<LoginScreen>
           ],
         ),
       ),
-    );
-  }
-
-  // Hero Section with logo and tagline
-  Widget _buildHeroSection() {
-    return Column(
-      children: [
-        Image.asset(
-          'assets/images/TripSyncLogo.png',
-          width: 140,
-          height: 140,
-          fit: BoxFit.contain,
-          errorBuilder: (_, _, _) => const Icon(
-            Icons.travel_explore_rounded,
-            color: Colors.white,
-            size: 80,
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.favorite_border_rounded,
-              color: AppColors.primaryColor,
-              size: 18,
-            ),
-            SizedBox(width: 10),
-            const Text(
-              'همراه سفرهای گروهی شما',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.taglineColor,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        const SizedBox(height: 80),
-      ],
     );
   }
 

@@ -1,13 +1,197 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tripsync/features/auth/presentation/widgets/auth_hero.dart';
+import 'dart:ui';
 
-class RegisterScreen extends StatelessWidget {
+import 'package:tripsync/features/auth/presentation/widgets/register_form.dart';
+
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
   @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
+  bool _isLoading = false;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _handleRegister(String fullName, String email, String password) async {
+    setState(() => _isLoading = true);
+    // await supabase.auth.signUp(email: email, password: password, data: {'full_name': fullName});
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isLoading = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ثبت نام')),
-      body: const Center(child: Text('صفحه ثبت نام')),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          centerTitle: true,
+          title: const Text(
+            'ایجاد حساب کاربری',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              shadows: [Shadow(color: Colors.black38, blurRadius: 6)],
+            ),
+          ),
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // background image with error fallback
+            Image.asset(
+              'assets/images/TravelBg.png',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, 0.4),
+              errorBuilder: (_, _, _) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1a6fa8), Color(0xFF0d3b6e)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+
+            // gradiant overlay
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.60),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+
+            // content
+            SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 24,
+                ),
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: SlideTransition(
+                    position: _slideAnim,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AuthHero(imageSize: 150),
+                          const SizedBox(height: 36),
+                          RegisterForm(
+                            onRegister: _handleRegister,
+                            isLoading: _isLoading,
+                          ),
+                          const SizedBox(height: 20),
+                          _buildLoginButton(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Login button
+  Widget _buildLoginButton() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.30),
+              width: 1.5,
+            ),
+          ),
+          child: TextButton(
+            onPressed: () {
+              context.pop();
+            },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: RichText(
+              text: const TextSpan(
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white70,
+                  fontFamily: 'Vazirmatn',
+                ),
+                children: [
+                  TextSpan(text: 'حساب دارید؟  '),
+                  TextSpan(
+                    text: 'ورود',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      decorationColor: Colors.white54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
