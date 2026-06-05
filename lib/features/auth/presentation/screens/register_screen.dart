@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tripsync/features/auth/data/services/auth_service.dart';
 import 'package:tripsync/features/auth/presentation/widgets/auth_hero.dart';
 import 'dart:ui';
 
@@ -14,6 +15,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -40,11 +42,43 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
-  void _handleRegister(String fullName, String email, String password) async {
-    setState(() => _isLoading = true);
-    // await supabase.auth.signUp(email: email, password: password, data: {'full_name': fullName});
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
+  Future<void> _handleRegister(
+    String fullName,
+    String email,
+    String password,
+  ) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final response = await _authService.signUp(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+
+      if (user != null) {
+        await _authService.createProfile(
+          userId: user.id,
+          fullName: fullName,
+          email: email,
+        );
+
+        if (mounted) {
+          context.go('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
