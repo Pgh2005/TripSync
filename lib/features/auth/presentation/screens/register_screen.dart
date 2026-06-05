@@ -88,23 +88,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       child: Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: const Text(
-            'ایجاد حساب کاربری',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              shadows: [Shadow(color: Colors.black38, blurRadius: 6)],
-            ),
-          ),
-        ),
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -158,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           AuthHero(imageSize: 150),
-                          const SizedBox(height: 36),
+                          const SizedBox(height: 50),
                           RegisterForm(
                             onRegister: _handleRegister,
                             isLoading: _isLoading,

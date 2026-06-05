@@ -78,22 +78,6 @@ class _LoginScreenState extends State<LoginScreen>
       child: Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: const Text(
-            'ورود به حساب کاربری',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              shadows: [Shadow(color: Colors.black38, blurRadius: 6)],
-            ),
-          ),
-        ),
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -141,13 +125,13 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
-                        vertical: 20,
+                        vertical: 5,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           AuthHero(imageSize: 145),
-                          const SizedBox(height: 150),
+                          const SizedBox(height: 140),
                           LoginForm(
                             onLogin: _handleLogin,
                             isLoading: _isLoading,
