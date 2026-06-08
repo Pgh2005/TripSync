@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
           // background image with error fallback
           Image.asset(
-            'assets/images/TravelBg.png',
+            'assets/images/SplashBg.png',
             fit: BoxFit.cover,
             alignment: Alignment.center,
             errorBuilder: (_, _, _) => Container(
@@ -97,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen>
 
           // logo and tagline
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.03,
+            top: MediaQuery.of(context).size.height * 0.1,
             left: 0,
             right: 0,
             child: FadeTransition(
