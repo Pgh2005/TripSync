@@ -1,16 +1,34 @@
 import 'package:flutter/material.dart';
-import '../models/trip.dart';
+import 'package:tripsync/features/trip/data/models/trip_model.dart';
 
 class TripCard extends StatelessWidget {
-  final Trip trip;
+  final TripModel trip;
   final VoidCallback? onTap;
 
   const TripCard({super.key, required this.trip, this.onTap});
 
   static const Color primaryColor = Color(0xFF2563EB);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+  static const Color borderColor = Color(0xFFE2E8F0);
+  static const Color bgColor = Color(0xFFF8FAFF);
+
+  // پالت رنگی برای placeholder کارت‌ها
+  static const List<List<Color>> _gradients = [
+    [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+    [Color(0xFF0891B2), Color(0xFF0E7490)],
+    [Color(0xFF059669), Color(0xFF047857)],
+    [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+    [Color(0xFFDB2777), Color(0xFFBE185D)],
+    [Color(0xFFEA580C), Color(0xFFC2410C)],
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final gradientIndex = trip.destination.isNotEmpty
+        ? trip.destination.codeUnitAt(0) % _gradients.length
+        : 0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -18,9 +36,10 @@ class TripCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -29,40 +48,29 @@ class TripCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Cover Image / Placeholder ───────────────────────────
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  _buildCoverImage(),
-                  // Status badge
-                  Positioned(top: 12, right: 12, child: _buildStatusBadge()),
-                ],
-              ),
-            ),
+            // ── Cover ────────────────────────────────────────────
+            _buildCover(gradientIndex),
 
-            // ── Card Content ────────────────────────────────────────
+            // ── محتوا ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // عنوان سفر
+                  // عنوان
                   Text(
                     trip.title,
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: textDark,
                       letterSpacing: -0.3,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
 
                   // مقصد
                   Row(
@@ -70,14 +78,14 @@ class TripCard extends StatelessWidget {
                       const Icon(
                         Icons.location_on_rounded,
                         size: 14,
-                        color: Color(0xFF2563EB),
+                        color: primaryColor,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         trip.destination,
                         style: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF64748B),
+                          color: textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -86,22 +94,14 @@ class TripCard extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // ── تاریخ + تعداد اعضا ─────────────────────────────
+                  // ── تاریخ + فلش ─────────────────────────────────
                   Row(
                     children: [
-                      // تاریخ شروع
-                      _buildInfoChip(
+                      _buildChip(
                         icon: Icons.calendar_today_rounded,
                         label: _formatDate(trip.startDate),
                       ),
-                      const SizedBox(width: 10),
-                      // تعداد اعضا
-                      _buildInfoChip(
-                        icon: Icons.group_rounded,
-                        label: '${trip.memberCount} نفر',
-                      ),
                       const Spacer(),
-                      // فلش جزئیات
                       Container(
                         width: 32,
                         height: 32,
@@ -110,7 +110,7 @@ class TripCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
+                          Icons.arrow_forward_ios_rounded,
                           size: 14,
                           color: primaryColor,
                         ),
@@ -126,47 +126,65 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCoverImage() {
-    if (trip.coverImage != null) {
-      return Image.asset(
-        trip.coverImage!,
-        height: 180,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholderImage(),
-      );
-    }
-    return _placeholderImage();
-  }
-
-  Widget _placeholderImage() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            primaryColor.withValues(alpha: 0.7),
-            const Color(0xFF1D4ED8).withValues(alpha: 0.9),
-          ],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
+  Widget _buildCover(int gradientIndex) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: Container(
+        height: 130,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _gradients[gradientIndex],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          ),
         ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            const Icon(
-              Icons.travel_explore_rounded,
-              color: Colors.white54,
-              size: 48,
+            // دایره‌های تزئینی
+            Positioned(
+              top: -24,
+              left: -24,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              trip.destination,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            Positioned(
+              bottom: -32,
+              right: 20,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            // آیکون و نام مقصد
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.travel_explore_rounded,
+                    color: Colors.white60,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    trip.destination,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -175,59 +193,18 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
-    final (color, bg) = switch (trip.status) {
-      TripStatus.planning => (const Color(0xFFF59E0B), const Color(0xFFFFFBEB)),
-      TripStatus.confirmed => (
-        const Color(0xFF10B981),
-        const Color(0xFFECFDF5),
-      ),
-      TripStatus.completed => (
-        const Color(0xFF64748B),
-        const Color(0xFFF1F5F9),
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg.withValues(alpha:0.92),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            trip.status.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip({required IconData icon, required String label}) {
+  Widget _buildChip({required IconData icon, required String label}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFF),
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 12, color: primaryColor),
           const SizedBox(width: 5),
           Text(
             label,
@@ -242,8 +219,8 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    // تبدیل به فارسی ساده
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'بدون تاریخ';
     const months = [
       'فروردین',
       'اردیبهشت',
@@ -258,7 +235,6 @@ class TripCard extends StatelessWidget {
       'بهمن',
       'اسفند',
     ];
-    // میلادی نمایش میدیم تا وقتی shamsi اضافه کردی جایگزین کنی
     return '${date.day} ${months[date.month - 1]}';
   }
 }
