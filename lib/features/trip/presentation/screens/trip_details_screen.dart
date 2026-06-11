@@ -554,23 +554,4 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       ],
     );
   }
-
-  // String _formatDate(DateTime? date) {
-  //   if (date == null) return 'تعیین نشده';
-  //   const months = [
-  //     'فروردین',
-  //     'اردیبهشت',
-  //     'خرداد',
-  //     'تیر',
-  //     'مرداد',
-  //     'شهریور',
-  //     'مهر',
-  //     'آبان',
-  //     'آذر',
-  //     'دی',
-  //     'بهمن',
-  //     'اسفند',
-  //   ];
-  //   return '${date.day} ${months[date.month - 1]} ${date.year}';
-  // }
 }
