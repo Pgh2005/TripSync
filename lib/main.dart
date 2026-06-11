@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/router/app_router.dart';
 
@@ -29,6 +30,13 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('fa', 'IR'), Locale('en', 'US')],
+      locale: const Locale('fa', 'IR'), // اختیاری: تنظیم پیش‌فرض به فارسی
       builder: (context, child) {
         return Directionality(textDirection: TextDirection.rtl, child: child!);
       },

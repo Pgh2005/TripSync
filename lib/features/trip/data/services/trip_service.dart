@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tripsync/features/trip/data/models/member_model.dart';
 import '../models/trip_model.dart';
 
 class TripService {
@@ -46,5 +47,16 @@ class TripService {
         .order('created_at', ascending: false);
 
     return (response as List).map((trip) => TripModel.fromJson(trip)).toList();
+  }
+
+  Future<List<MemberModel>> getTripMembers(String tripId) async {
+    final response = await _supabase
+        .from('trip_members')
+        .select('profiles(*)')
+        .eq('trip_id', tripId);
+
+    return (response as List).map((item) {
+      return MemberModel.fromJson(item['profiles']);
+    }).toList();
   }
 }

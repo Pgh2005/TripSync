@@ -2,7 +2,10 @@ import 'package:go_router/go_router.dart';
 import 'package:tripsync/features/auth/presentation/screens/login_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/register_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/splash_screen.dart';
+import 'package:tripsync/features/trip/data/models/trip_model.dart';
+import 'package:tripsync/features/trip/presentation/screens/create_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/home_screen.dart';
+import 'package:tripsync/features/trip/presentation/screens/trip_details_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -14,5 +17,16 @@ final appRouter = GoRouter(
       builder: (context, state) => const RegisterScreen(),
     ),
     GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    GoRoute(
+      path: '/create-trip',
+      builder: (context, state) => const CreateTripScreen(),
+    ),
+    GoRoute(
+      path: '/trip-detail',
+      builder: (context, state) {
+        final trip = state.extra as TripModel;
+        return TripDetailScreen(trip: trip);
+      },
+    ),
   ],
 );

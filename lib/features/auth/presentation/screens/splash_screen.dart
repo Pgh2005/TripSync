@@ -109,33 +109,33 @@ class _SplashScreenState extends State<SplashScreen>
                   children: [
                     Image.asset(
                       'assets/images/TripSyncLogo.png',
-                      width: 160,
-                      height: 160,
+                      width: 180,
+                      height: 180,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.travel_explore_rounded,
                         color: Colors.white,
-                        size: 80,
+                        size: 100,
                       ),
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(
+                          Icons.favorite_border_rounded,
+                          color: AppColors.primaryColor,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
                         const Text(
                           'همراه سفرهای گروهی شما',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 20,
                             color: AppColors.taglineColor,
                             height: 1.5,
                             fontWeight: FontWeight.w500,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.favorite_border_rounded,
-                          color: AppColors.primaryColor,
-                          size: 16,
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
@@ -112,7 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (_trips.isEmpty)
                           _buildEmptyState()
                         else
-                          ..._trips.map((trip) => TripCard(trip: trip)),
+                          ..._trips.map(
+                            (trip) => TripCard(
+                              trip: trip,
+                              onTap: () {
+                                context.push('/trip-detail', extra: trip);
+                              },
+                            ),
+                          ),
                       ]),
                     ),
                   ),
@@ -122,8 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // ── FAB ───────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: context.push('/new-trip');
+        onPressed: () async {
+          await context.push('/create-trip');
+          if (mounted) {
+            _refresh();
+          }
         },
         backgroundColor: primaryColor,
         elevation: 6,

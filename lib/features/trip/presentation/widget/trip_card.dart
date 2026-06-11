@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
+import 'package:tripsync/core/utils/date_formatter.dart';
 
 class TripCard extends StatelessWidget {
   final TripModel trip;
@@ -99,7 +100,9 @@ class TripCard extends StatelessWidget {
                     children: [
                       _buildChip(
                         icon: Icons.calendar_today_rounded,
-                        label: _formatDate(trip.startDate),
+                        label: trip.startDate != null
+                            ? DateFormatter.toJalali(trip.startDate!)
+                            : 'بدون تاریخ',
                       ),
                       const Spacer(),
                       Container(
@@ -217,24 +220,5 @@ class TripCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'بدون تاریخ';
-    const months = [
-      'فروردین',
-      'اردیبهشت',
-      'خرداد',
-      'تیر',
-      'مرداد',
-      'شهریور',
-      'مهر',
-      'آبان',
-      'آذر',
-      'دی',
-      'بهمن',
-      'اسفند',
-    ];
-    return '${date.day} ${months[date.month - 1]}';
   }
 }
