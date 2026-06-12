@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
-import 'package:tripsync/core/utils/date_formatter.dart';
+import 'package:tripsync/core/utils/app_date_formatter.dart';
 
 class TripCard extends StatelessWidget {
   final TripModel trip;
@@ -101,7 +101,7 @@ class TripCard extends StatelessWidget {
                       _buildChip(
                         icon: Icons.calendar_today_rounded,
                         label: trip.startDate != null
-                            ? DateFormatter.toJalali(trip.startDate!)
+                            ? AppDateFormatter.toJalali(trip.startDate!)
                             : 'بدون تاریخ',
                       ),
                       const Spacer(),

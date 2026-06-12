@@ -1,6 +1,6 @@
 import 'package:shamsi_date/shamsi_date.dart';
 
-class DateFormatter {
+class AppDateFormatter {
   static String toJalali(DateTime date) {
     final jDate = Jalali.fromDateTime(date);
 

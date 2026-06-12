@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
-import 'package:tripsync/core/utils/date_formatter.dart';
+import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 
 import 'package:tripsync/features/trip/data/models/member_model.dart';
@@ -233,7 +233,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             iconBg: const Color(0xFFF5F3FF),
             label: 'تاریخ شروع',
             value: widget.trip.startDate != null
-                ? DateFormatter.toJalali(widget.trip.startDate!)
+                ? AppDateFormatter.toJalali(widget.trip.startDate!)
                 : 'تاریخ نامشخص',
           ),
 

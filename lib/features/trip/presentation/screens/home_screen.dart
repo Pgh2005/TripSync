@@ -131,8 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // ── FAB ───────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await context.push('/create-trip');
-          if (mounted) {
+          final result = await context.push('/create-trip');
+
+          if (result == true && mounted) {
             _refresh();
           }
         },
