@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 import 'package:tripsync/features/trip/presentation/widget/trip_card.dart';
@@ -79,13 +78,9 @@ class _HomeScreenState extends State<HomeScreen> {
               expandedHeight: 100,
               floating: false,
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(height: 1, color: borderColor),
-              ),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,
                 background: _buildHeader(),
