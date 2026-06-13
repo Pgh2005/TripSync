@@ -5,6 +5,7 @@ import 'package:tripsync/features/auth/presentation/screens/splash_screen.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/presentation/screens/create_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/home_screen.dart';
+import 'package:tripsync/features/trip/presentation/screens/join_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/trip_details_screen.dart';
 
 final appRouter = GoRouter(
@@ -26,6 +27,12 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final trip = state.extra as TripModel;
         return TripDetailScreen(trip: trip);
+      },
+    ),
+    GoRoute(
+      path: '/join-trip',
+      builder: (context, state) {
+        return const JoinTripScreen();
       },
     ),
   ],

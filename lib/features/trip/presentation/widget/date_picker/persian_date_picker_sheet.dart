@@ -278,10 +278,10 @@ class _PersianDatePickerSheetState extends State<PersianDatePickerSheet> {
                       child: Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [
                               AppColors.primaryColor,
-                              AppColors.primaryDark,
+                              AppColors.primaryColor.withValues(alpha: 0.60),
                             ],
                             begin: Alignment.topRight,
                             end: Alignment.bottomLeft,

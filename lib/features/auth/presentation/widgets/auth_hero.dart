@@ -27,7 +27,7 @@ class AuthHero extends StatelessWidget {
           children: [
             const Icon(
               Icons.favorite_border_rounded,
-              color: AppColors.primaryColor,
+              color: AppColors.authprimaryColor,
               size: 18,
             ),
             const SizedBox(width: 10),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 import 'package:tripsync/features/trip/presentation/widget/trip_card.dart';
@@ -18,12 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<TripModel> _trips = [];
   bool _isLoading = true;
   String _userName = '';
-
-  static const Color primaryColor = Color(0xFF2563EB);
-  static const Color bgColor = Color(0xFFF8FAFF);
-  static const Color textDark = Color(0xFF0F172A);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color borderColor = Color(0xFFE2E8F0);
 
   @override
   void initState() {
@@ -49,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadTrips() async {
     try {
-      final trips = await _tripService.getMyTrips();
+      final trips = await _tripService.getUserTrips();
       setState(() => _trips = trips);
     } catch (e) {
       debugPrint(e.toString());
@@ -67,10 +62,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppColors.backgroundColor,
       body: RefreshIndicator(
         onRefresh: _refresh,
-        color: primaryColor,
+        color: AppColors.primaryColor,
         child: CustomScrollView(
           slivers: [
             // ── SliverAppBar ──────────────────────────────────────
@@ -91,7 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
             _isLoading
                 ? const SliverFillRemaining(
                     child: Center(
-                      child: CircularProgressIndicator(color: primaryColor),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryColor,
+                      ),
                     ),
                   )
                 : SliverPadding(
@@ -132,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _refresh();
           }
         },
-        backgroundColor: primaryColor,
+        backgroundColor: AppColors.primaryColor,
         elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -151,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [primaryColor, Color(0xFF1D4ED8)],
+          colors: [AppColors.primaryColor, Color(0xFF1D4ED8)],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
@@ -213,33 +210,68 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── تیتر بخش + badge تعداد ───────────────────────────────────────
   Widget _buildSectionTitle() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'سفرهای من',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: textDark,
-            letterSpacing: -0.3,
+        const Expanded(
+          child: Text(
+            'سفرهای من',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textDark,
+              letterSpacing: -0.3,
+            ),
           ),
         ),
-        if (_trips.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${_trips.length} سفر',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: primaryColor,
-              ),
+
+        // if (_trips.isNotEmpty)
+        //   Container(
+        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        //     decoration: BoxDecoration(
+        //       color: AppColors.primaryColor.withValues(alpha: 0.08),
+        //       borderRadius: BorderRadius.circular(20),
+        //     ),
+        //     child: Text(
+        //       '${_trips.length} سفر',
+        //       style: const TextStyle(
+        //         fontSize: 12,
+        //         fontWeight: FontWeight.w700,
+        //         color: AppColors.primaryColor,
+        //       ),
+        //     ),
+        //   ),
+        const SizedBox(width: 10),
+
+        OutlinedButton.icon(
+          onPressed: () async {
+            final result = await context.push('/join-trip');
+
+            if (result == true && mounted) {
+              _refresh();
+            }
+          },
+          icon: const Icon(
+            Icons.group_add_rounded,
+            size: 18,
+            color: AppColors.primaryColor,
+          ),
+          label: const Text(
+            'پیوستن',
+            style: TextStyle(
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w700,
             ),
           ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            side: BorderSide(
+              color: AppColors.primaryColor.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -252,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor, width: 1),
+        border: Border.all(color: AppColors.borderColor, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -267,13 +299,13 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.08),
+              color: AppColors.primaryColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
               Icons.travel_explore_rounded,
               size: 38,
-              color: primaryColor,
+              color: AppColors.primaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -282,13 +314,17 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: textDark,
+              color: AppColors.textDark,
             ),
           ),
           const SizedBox(height: 6),
           const Text(
             'اولین سفر گروهی خودت رو بساز',
-            style: TextStyle(fontSize: 13, color: textMuted, height: 1.5),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

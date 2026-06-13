@@ -2,11 +2,10 @@ class TripModel {
   final String id;
   final String title;
   final String destination;
-
   final DateTime? startDate;
-
   final String createdBy;
   final DateTime createdAt;
+  final String inviteCode;
 
   TripModel({
     required this.id,
@@ -14,6 +13,7 @@ class TripModel {
     required this.destination,
     required this.createdBy,
     required this.createdAt,
+    required this.inviteCode,
     this.startDate,
   });
 
@@ -30,6 +30,7 @@ class TripModel {
       startDate: json['start_date'] != null
           ? DateTime.parse(json['start_date'])
           : null,
+      inviteCode: json['invite_code'] as String,
     );
   }
 
@@ -51,6 +52,7 @@ class TripModel {
     String? createdBy,
     DateTime? createdAt,
     DateTime? startDate,
+    String? inviteCode,
   }) {
     return TripModel(
       id: id ?? this.id,
@@ -59,6 +61,7 @@ class TripModel {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       startDate: startDate ?? this.startDate,
+      inviteCode: inviteCode ?? this.inviteCode,
     );
   }
 }

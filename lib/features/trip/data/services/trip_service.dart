@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tripsync/core/utils/invite_code_generator.dart';
 import 'package:tripsync/features/trip/data/models/member_model.dart';
 import '../models/trip_model.dart';
 
@@ -23,6 +25,7 @@ class TripService {
           'destination': destination,
           'start_date': startDate.toIso8601String().split('T').first,
           'created_by': user.id,
+          'invite_code': InviteCodeGenerator.generate(),
         })
         .select()
         .single();
@@ -33,7 +36,7 @@ class TripService {
     });
   }
 
-  Future<List<TripModel>> getMyTrips() async {
+  Future<List<TripModel>> getUserTrips() async {
     final user = _supabase.auth.currentUser;
 
     if (user == null) {
@@ -41,12 +44,14 @@ class TripService {
     }
 
     final response = await _supabase
-        .from('trips')
-        .select()
-        .eq('created_by', user.id)
-        .order('created_at', ascending: false);
+        .from('trip_members')
+        .select('trips(*)')
+        .eq('user_id', user.id);
 
-    return (response as List).map((trip) => TripModel.fromJson(trip)).toList();
+    return (response as List)
+        .where((item) => item['trips'] != null)
+        .map((item) => TripModel.fromJson(item['trips']))
+        .toList();
   }
 
   Future<List<MemberModel>> getTripMembers(String tripId) async {
@@ -55,8 +60,60 @@ class TripService {
         .select('profiles(*)')
         .eq('trip_id', tripId);
 
-    return (response as List).map((item) {
-      return MemberModel.fromJson(item['profiles']);
-    }).toList();
+    return (response as List)
+        .where((item) => item['profiles'] != null)
+        .map((item) => MemberModel.fromJson(item['profiles']))
+        .toList();
+  }
+
+  Future<TripModel?> getTripByInviteCode(String code) async {
+    final response = await _supabase
+        .from('trips')
+        .select()
+        .eq('invite_code', code.toUpperCase())
+        .maybeSingle();
+
+    if (response == null) {
+      return null;
+    }
+
+    return TripModel.fromJson(response);
+  }
+
+  Future<void> joinTrip(String tripId) async {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('کاربر وارد نشده است');
+    }
+
+    final existing = await _supabase
+        .from('trip_members')
+        .select()
+        .eq('trip_id', tripId)
+        .eq('user_id', user.id);
+
+    if (existing.isNotEmpty) {
+      throw Exception('شما قبلاً عضو این سفر شده‌اید');
+    }
+
+    await _supabase.from('trip_members').insert({
+      'trip_id': tripId,
+      'user_id': user.id,
+    });
+  }
+
+  Future<void> deleteTrip(String tripId) async {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('کاربر وارد نشده است');
+    }
+
+    // حذف اعضای سفر
+    await _supabase.from('trip_members').delete().eq('trip_id', tripId);
+
+    // حذف خود سفر
+    await _supabase.from('trips').delete().eq('id', tripId);
   }
 }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
-
 import 'package:tripsync/features/trip/data/models/member_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 
@@ -26,6 +27,11 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   List<MemberModel> _members = [];
 
   bool _isLoadingMembers = true;
+
+  bool get _isOwner {
+    final user = Supabase.instance.client.auth.currentUser;
+    return user?.id == widget.trip.createdBy;
+  }
 
   @override
   void initState() {
@@ -102,6 +108,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
                         // دکمه دعوت
                         _buildInviteButton(),
+
+                        const SizedBox(height: 20),
+
+                        if (_isOwner) _deleteTripButton(),
                       ],
                     ),
                   ),
@@ -480,7 +490,9 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       ),
       child: ElevatedButton(
         onPressed: () {
-          // TODO: باز کردن sheet دعوت
+          SharePlus.instance.share(
+            ShareParams(title: 'کد عضویت :', text: widget.trip.inviteCode),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
@@ -492,10 +504,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_add_rounded, color: Colors.white, size: 22),
-            SizedBox(width: 10),
             Text(
-              'دعوت از دوستان',
+              'اشتراک لینک عضویت',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -503,6 +513,60 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                 letterSpacing: 0.2,
               ),
             ),
+            SizedBox(width: 10),
+            Icon(Icons.person_add_rounded, color: Colors.white, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _deleteTripButton() {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.errorColor.withValues(alpha: 0.9),
+            AppColors.errorColor,
+            AppColors.errorColor,
+            AppColors.errorColor.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.errorColor.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'حذف سفر',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
+            ),
+            SizedBox(width: 10),
+            Icon(Icons.delete_rounded, color: Colors.white, size: 22),
           ],
         ),
       ),

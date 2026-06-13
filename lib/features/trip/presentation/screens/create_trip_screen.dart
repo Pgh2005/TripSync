@@ -148,7 +148,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
   // ── AppBar ───────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.primaryColor.withValues(alpha: 0.9),
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
@@ -156,7 +156,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
       title: const Text(
         'ایجاد سفر جدید',
         style: TextStyle(
-          color: AppColors.textDark,
+          color: AppColors.backgroundColor,
           fontSize: 17,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.3,
@@ -175,8 +175,11 @@ class _CreateTripScreenState extends State<CreateTripScreen>
       height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryColor, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryColor,
+            AppColors.primaryColor.withValues(alpha: 0.60),
+          ],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
@@ -460,7 +463,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
               )
             else
               const Icon(
-                Icons.chevron_left_rounded,
+                Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
                 size: 20,
               ),
@@ -479,8 +482,11 @@ class _CreateTripScreenState extends State<CreateTripScreen>
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryColor, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryColor,
+            AppColors.primaryColor.withValues(alpha: 0.60),
+          ],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
