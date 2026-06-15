@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
@@ -23,14 +24,13 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   late Animation<Offset> _slideAnim;
 
   final TripService _tripService = TripService();
-
   List<MemberModel> _members = [];
-
   bool _isLoadingMembers = true;
 
+  // ── owner check ──────────────────────────────────────────────────
   bool get _isOwner {
-    final user = Supabase.instance.client.auth.currentUser;
-    return user?.id == widget.trip.createdBy;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    return widget.trip.createdBy == currentUserId;
   }
 
   @override
@@ -58,17 +58,158 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   Future<void> _loadMembers() async {
     try {
       final members = await _tripService.getTripMembers(widget.trip.id);
-
-      setState(() {
-        _members = members;
-      });
+      setState(() => _members = members);
     } catch (e) {
       debugPrint(e.toString());
     } finally {
-      setState(() {
-        _isLoadingMembers = false;
-      });
+      setState(() => _isLoadingMembers = false);
     }
+  }
+
+  // ── حذف سفر با dialog تأیید ──────────────────────────────────────
+  Future<void> _deleteTrip() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.errorColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.errorColor,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'حذف سفر',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'آیا مطمئنی؟ این سفر و تمام اطلاعاتش برای همیشه حذف می‌شه.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                    height: 1.6,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () => context.pop(false),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: AppColors.borderColor,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'انصراف',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => context.pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.errorColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'حذف کن',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
+    try {
+      await _tripService.deleteTrip(widget.trip.id);
+
+      if (!mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pop();
+
+      context.pop(true);
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطا در حذف سفر: $e'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
+    }
+  }
+
+  // ── ویرایش سفر ──────────────────────────────────────────────────
+  void _editTrip() {
+    // TODO: context.push('/edit-trip', extra: widget.trip);
   }
 
   @override
@@ -79,10 +220,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         backgroundColor: AppColors.backgroundColor,
         body: CustomScrollView(
           slivers: [
-            // ── ۱. Hero Header ──────────────────────────────────────
             _buildHeroHeader(context),
-
-            // ── ۲. محتوا ───────────────────────────────────────────
             SliverToBoxAdapter(
               child: FadeTransition(
                 opacity: _fadeAnim,
@@ -98,20 +236,11 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // اطلاعات سفر
                         _buildInfoCard(),
                         const SizedBox(height: 20),
-
-                        // اعضا
                         _buildMembersSection(),
                         const SizedBox(height: 20),
-
-                        // دکمه دعوت
                         _buildInviteButton(),
-
-                        const SizedBox(height: 20),
-
-                        if (_isOwner) _deleteTripButton(),
                       ],
                     ),
                   ),
@@ -124,10 +253,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── Hero Header ─────────────────────────────────────────────────
+  // ── Hero Header ──────────────────────────────────────────────────
   SliverAppBar _buildHeroHeader(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 160,
+      expandedHeight: 200,
       pinned: true,
       backgroundColor: AppColors.primaryColor,
       surfaceTintColor: Colors.transparent,
@@ -135,12 +264,12 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.parallax,
-        background: _buildHeroBackground(),
+        background: _buildHeroBackground(context),
       ),
     );
   }
 
-  Widget _buildHeroBackground() {
+  Widget _buildHeroBackground(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -159,48 +288,156 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           // محتوای hero
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // آیکون سفر
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.30),
-                        width: 1.5,
+                  Spacer(),
+                  // ── اطلاعات سفر پایین هدر ──────────────────────
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.30),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.travel_explore_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          Spacer(),
+                          // دکمه‌های owner
+                          if (_isOwner) ...[
+                            _heroButton(
+                              icon: Icons.edit_rounded,
+                              onTap: _editTrip,
+                              tooltip: 'ویرایش سفر',
+                            ),
+                            const SizedBox(width: 8),
+                            _heroButton(
+                              icon: Icons.delete_rounded,
+                              onTap: _deleteTrip,
+                              tooltip: 'حذف سفر',
+                              isDestructive: true,
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.travel_explore_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                      SizedBox(height: 20),
+                      Text(
+                        widget.trip.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: Colors.white70,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.trip.destination,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          // badge owner
+                          if (_isOwner) ...[
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.20),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.30),
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.star_rounded,
+                                    color: Colors.white,
+                                    size: 11,
+                                  ),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'سازنده',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // عنوان سفر
-                  Text(
-                    widget.trip.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _heroButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    String? tooltip,
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip ?? '',
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: isDestructive
+                ? AppColors.errorColor.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: isDestructive
+                  ? AppColors.errorColor.withValues(alpha: 0.40)
+                  : Colors.white.withValues(alpha: 0.30),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, color: Colors.white, size: 17),
+        ),
       ),
     );
   }
@@ -224,8 +461,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         children: [
           _sectionHeader('اطلاعات سفر', Icons.info_outline_rounded),
           const SizedBox(height: 16),
-
-          // مقصد
           _infoRow(
             icon: Icons.location_on_rounded,
             iconColor: const Color(0xFF0891B2),
@@ -233,10 +468,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             label: 'مقصد',
             value: widget.trip.destination,
           ),
-
           _infoDivider(),
-
-          // تاریخ شروع
           _infoRow(
             icon: Icons.calendar_today_rounded,
             iconColor: const Color(0xFF7C3AED),
@@ -246,10 +478,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                 ? AppDateFormatter.toJalali(widget.trip.startDate!)
                 : 'تاریخ نامشخص',
           ),
-
           _infoDivider(),
-
-          // تعداد اعضا
           _infoRow(
             icon: Icons.group_rounded,
             iconColor: const Color(0xFF059669),
@@ -320,7 +549,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── بخش اعضا ────────────────────────────────────────────────────
+  // ── بخش اعضا ─────────────────────────────────────────────────────
   Widget _buildMembersSection() {
     return _card(
       child: Column(
@@ -328,12 +557,11 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         children: [
           _sectionHeader('اعضای سفر', Icons.group_outlined),
           const SizedBox(height: 16),
-
           if (_isLoadingMembers)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator(color: AppColors.primaryColor),
               ),
             )
           else if (_members.isEmpty)
@@ -343,7 +571,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _members.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 4),
+              separatorBuilder: (_, __) => const SizedBox(height: 4),
               itemBuilder: (_, index) =>
                   _buildMemberTile(_members[index], index),
             ),
@@ -353,7 +581,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   }
 
   Widget _buildMemberTile(MemberModel member, int index) {
-    // رنگ‌های متنوع برای آواتار
     final avatarColors = [
       AppColors.primaryColor,
       const Color(0xFF0891B2),
@@ -374,7 +601,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       ),
       child: Row(
         children: [
-          // آواتار
           Container(
             width: 44,
             height: 44,
@@ -398,8 +624,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             ),
           ),
           const SizedBox(width: 12),
-
-          // اسم
           Expanded(
             child: Text(
               member.fullName,
@@ -410,8 +634,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               ),
             ),
           ),
-
-          // badge عضو
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -469,7 +691,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── دکمه دعوت ───────────────────────────────────────────────────
+  // ── دکمه اشتراک لینک دعوت ───────────────────────────────────────
   Widget _buildInviteButton() {
     return Container(
       height: 56,
@@ -491,7 +713,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       child: ElevatedButton(
         onPressed: () {
           SharePlus.instance.share(
-            ShareParams(title: 'کد عضویت :', text: widget.trip.inviteCode),
+            ShareParams(title: 'کد عضویت:', text: widget.trip.inviteCode),
           );
         },
         style: ElevatedButton.styleFrom(
@@ -514,59 +736,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               ),
             ),
             SizedBox(width: 10),
-            Icon(Icons.person_add_rounded, color: Colors.white, size: 22),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _deleteTripButton() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.errorColor.withValues(alpha: 0.9),
-            AppColors.errorColor,
-            AppColors.errorColor,
-            AppColors.errorColor.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.errorColor.withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'حذف سفر',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
-              ),
-            ),
-            SizedBox(width: 10),
-            Icon(Icons.delete_rounded, color: Colors.white, size: 22),
+            Icon(Icons.share_rounded, color: Colors.white, size: 22),
           ],
         ),
       ),

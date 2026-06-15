@@ -108,8 +108,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           ..._trips.map(
                             (trip) => TripCard(
                               trip: trip,
-                              onTap: () {
-                                context.push('/trip-detail', extra: trip);
+                              onTap: () async {
+                                final result = await context.push(
+                                  '/trip-detail',
+                                  extra: trip,
+                                );
+
+                                if (result == true && mounted) {
+                                  _refresh();
+                                }
                               },
                             ),
                           ),

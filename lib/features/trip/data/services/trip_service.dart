@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/utils/invite_code_generator.dart';
 import 'package:tripsync/features/trip/data/models/member_model.dart';
@@ -101,6 +100,22 @@ class TripService {
       'trip_id': tripId,
       'user_id': user.id,
     });
+  }
+
+  Future<void> updateTrip({
+    required String tripId,
+    required String title,
+    required String destination,
+    required DateTime startDate,
+  }) async {
+    await _supabase
+        .from('trips')
+        .update({
+          'title': title,
+          'destination': destination,
+          'start_date': startDate.toIso8601String(),
+        })
+        .eq('id', tripId);
   }
 
   Future<void> deleteTrip(String tripId) async {
