@@ -22,6 +22,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+  late TripModel _trip;
 
   final TripService _tripService = TripService();
   List<MemberModel> _members = [];
@@ -30,7 +31,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   // ── owner check ──────────────────────────────────────────────────
   bool get _isOwner {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    return widget.trip.createdBy == currentUserId;
+    return _trip.createdBy == currentUserId;
   }
 
   @override
@@ -46,6 +47,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
         );
     _animController.forward();
+    _trip = widget.trip;
     _loadMembers();
   }
 
@@ -57,7 +59,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   Future<void> _loadMembers() async {
     try {
-      final members = await _tripService.getTripMembers(widget.trip.id);
+      final members = await _tripService.getTripMembers(_trip.id);
       setState(() => _members = members);
     } catch (e) {
       debugPrint(e.toString());
@@ -186,7 +188,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
 
     try {
-      await _tripService.deleteTrip(widget.trip.id);
+      await _tripService.deleteTrip(_trip.id);
 
       if (!mounted) return;
 
@@ -208,8 +210,12 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   }
 
   // ── ویرایش سفر ──────────────────────────────────────────────────
-  void _editTrip() {
-    // TODO: context.push('/edit-trip', extra: widget.trip);
+  Future<void> _editTrip() async {
+    final result = await context.push('/edit-trip', extra: _trip);
+
+    if (result == true && mounted) {
+      context.pop(true);
+    }
   }
 
   @override
@@ -335,7 +341,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                       ),
                       SizedBox(height: 20),
                       Text(
-                        widget.trip.title,
+                        _trip.title,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -354,50 +360,13 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            widget.trip.destination,
+                            _trip.destination,
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // badge owner
-                          if (_isOwner) ...[
-                            const SizedBox(width: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.20),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.30),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.star_rounded,
-                                    color: Colors.white,
-                                    size: 11,
-                                  ),
-                                  SizedBox(width: 3),
-                                  Text(
-                                    'سازنده',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ],
@@ -466,7 +435,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             iconColor: const Color(0xFF0891B2),
             iconBg: const Color(0xFFECFEFF),
             label: 'مقصد',
-            value: widget.trip.destination,
+            value: _trip.destination,
           ),
           _infoDivider(),
           _infoRow(
@@ -474,8 +443,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             iconColor: const Color(0xFF7C3AED),
             iconBg: const Color(0xFFF5F3FF),
             label: 'تاریخ شروع',
-            value: widget.trip.startDate != null
-                ? AppDateFormatter.toJalali(widget.trip.startDate!)
+            value: _trip.startDate != null
+                ? AppDateFormatter.toJalali(_trip.startDate!)
                 : 'تاریخ نامشخص',
           ),
           _infoDivider(),
@@ -571,7 +540,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _members.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
+              separatorBuilder: (_, _) => const SizedBox(height: 4),
               itemBuilder: (_, index) =>
                   _buildMemberTile(_members[index], index),
             ),
@@ -713,7 +682,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       child: ElevatedButton(
         onPressed: () {
           SharePlus.instance.share(
-            ShareParams(title: 'کد عضویت:', text: widget.trip.inviteCode),
+            ShareParams(title: 'کد عضویت:', text: _trip.inviteCode),
           );
         },
         style: ElevatedButton.styleFrom(

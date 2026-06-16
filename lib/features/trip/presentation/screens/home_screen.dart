@@ -203,10 +203,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 1.5,
               ),
             ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 24,
+            child: IconButton(
+              onPressed: () {
+                context.push('/profile');
+              },
+              icon: const Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
         ],
