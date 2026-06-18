@@ -463,31 +463,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _headerIconButton({
-    required IconData icon,
-    required VoidCallback? onTap,
-  }) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.16),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Icon(
-            icon,
-            color: onTap == null
-                ? Colors.white.withValues(alpha: 0.42)
-                : Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildErrorBanner() {
     return Container(
       padding: const EdgeInsets.all(14),

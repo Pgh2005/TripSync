@@ -550,6 +550,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   }
 
   Widget _buildMemberTile(MemberModel member, int index) {
+    final isTripOwner = member.id == _trip.createdBy;
     final avatarColors = [
       AppColors.primaryColor,
       const Color(0xFF0891B2),
@@ -557,7 +558,9 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       const Color(0xFF059669),
       const Color(0xFFDB2777),
     ];
-    final color = avatarColors[index % avatarColors.length];
+    final color = isTripOwner
+        ? const Color(0xFFF59E0B)
+        : avatarColors[index % avatarColors.length];
     final initials = member.fullName.isNotEmpty
         ? member.fullName.trim().split(' ').map((w) => w[0]).take(2).join()
         : '?';
@@ -565,57 +568,113 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.backgroundColor,
+        color: isTripOwner
+            ? const Color(0xFFFFFBEB)
+            : AppColors.backgroundColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isTripOwner
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.28)
+              : Colors.transparent,
+        ),
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: color.withValues(alpha: 0.30),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                initials,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.30),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (isTripOwner)
+                Positioned(
+                  top: -6,
+                  left: -6,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              member.fullName,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.fullName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                if (isTripOwner) ...[
+                  const SizedBox(height: 2),
+                  // const Text(
+                  //   'سازنده سفر',
+                  //   style: TextStyle(
+                  //     fontSize: 11,
+                  //     fontWeight: FontWeight.w600,
+                  //     color: AppColors.textMuted,
+                  //   ),
+                  // ),
+                ],
+              ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(999),
             ),
-            child: Text(
-              'عضو',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isTripOwner) ...[
+                  Icon(Icons.workspace_premium_rounded, size: 13, color: color),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  isTripOwner ? 'مالک' : 'عضو',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
