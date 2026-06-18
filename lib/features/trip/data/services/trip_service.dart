@@ -131,4 +131,21 @@ class TripService {
     // حذف خود سفر
     await _supabase.from('trips').delete().eq('id', tripId);
   }
+
+  Future<void> removeMember({
+    required String tripId,
+    required String memberId,
+  }) async {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('کاربر وارد نشده است');
+    }
+
+    await _supabase
+        .from('trip_members')
+        .delete()
+        .eq('trip_id', tripId)
+        .eq('user_id', memberId);
+  }
 }

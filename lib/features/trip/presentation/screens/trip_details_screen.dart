@@ -218,6 +218,165 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     }
   }
 
+  Future<bool> _confirmRemoveMember(MemberModel member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.errorColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.person_remove_rounded,
+                    color: AppColors.errorColor,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'حذف عضو',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'آیا مطمئنی می‌خواهی این عضو را حذف کنی؟',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                    height: 1.6,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (member.fullName.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    member.fullName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () => context.pop(false),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: AppColors.borderColor,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'لغو',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => context.pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.errorColor,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'حذف',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return confirmed == true;
+  }
+
+  Future<void> _removeMember(MemberModel member) async {
+    if (!_isOwner || member.id == _trip.createdBy) return;
+
+    final confirmed = await _confirmRemoveMember(member);
+    if (!confirmed || !mounted) return;
+
+    try {
+      await _tripService.removeMember(tripId: _trip.id, memberId: member.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _members.removeWhere((item) => item.id == member.id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('عضو با موفقیت حذف شد'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Remove member error: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حذف عضو انجام نشد'),
+            backgroundColor: AppColors.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -542,8 +701,67 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               itemCount: _members.length,
               separatorBuilder: (_, _) => const SizedBox(height: 4),
               itemBuilder: (_, index) =>
-                  _buildMemberTile(_members[index], index),
+                  _buildMemberListItem(_members[index], index),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemberListItem(MemberModel member, int index) {
+    final isTripOwnerMember = member.id == _trip.createdBy;
+    final canRemoveMember = _isOwner && !isTripOwnerMember;
+    final memberTile = _buildMemberTile(member, index);
+
+    if (!canRemoveMember) {
+      return memberTile;
+    }
+
+    return Dismissible(
+      key: ValueKey('trip-member-${_trip.id}-${member.id}'),
+      direction: DismissDirection.horizontal,
+      background: _buildDismissBackground(alignment: Alignment.centerRight),
+      secondaryBackground: _buildDismissBackground(
+        alignment: Alignment.centerLeft,
+      ),
+      confirmDismiss: (_) async {
+        await _removeMember(member);
+        return false;
+      },
+      child: memberTile,
+    );
+  }
+
+  Widget _buildDismissBackground({required Alignment alignment}) {
+    final isRight = alignment == Alignment.centerRight;
+
+    return Container(
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: AppColors.errorColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: isRight
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
+        children: [
+          if (!isRight) const SizedBox(width: 8),
+          const Icon(
+            Icons.delete_outline_rounded,
+            color: AppColors.errorColor,
+            size: 22,
+          ),
+          if (isRight) const SizedBox(width: 8),
+          const Text(
+            'حذف',
+            style: TextStyle(
+              color: AppColors.errorColor,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
