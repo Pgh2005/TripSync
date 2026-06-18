@@ -1,10 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/features/auth/data/services/auth_service.dart';
-import 'package:tripsync/main.dart';
-import 'dart:math' as math;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _fullName = '';
   String _email = '';
   bool _isLoading = true;
+  bool _hasProfileError = false;
   bool _isLoggingOut = false;
 
   @override
@@ -47,26 +48,86 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _loadProfile() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _hasProfileError = false;
+      });
+    }
+
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        if (!mounted) return;
+        context.go('/login');
+        return;
+      }
 
-      // email از auth
-      _email = user.email ?? '';
-
-      // full_name از جدول profiles
       final profile = await Supabase.instance.client
           .from('profiles')
           .select('full_name')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
-      setState(() => _fullName = profile['full_name'] ?? '');
+      if (!mounted) return;
+
+      setState(() {
+        _email = user.email ?? '';
+        _fullName = (profile?['full_name'] as String?)?.trim() ?? '';
+      });
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('Load profile error: $e');
+
+      if (!mounted) return;
+
+      setState(() => _hasProfileError = true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطا در دریافت اطلاعات پروفایل'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
     } finally {
+      if (!mounted) return;
+
       setState(() => _isLoading = false);
       _animController.forward();
+    }
+  }
+
+  Future<void> _refreshProfile() async {
+    await _loadProfile();
+  }
+
+  Future<void> _handleLogout() async {
+    final shouldLogout = await _showLogoutDialog();
+
+    if (shouldLogout != true) return;
+    if (!mounted) return;
+
+    setState(() => _isLoggingOut = true);
+
+    try {
+      await _authService.signOut();
+
+      if (!mounted) return;
+      context.go('/login');
+    } catch (e) {
+      debugPrint('Logout error: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطا در خروج از حساب'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoggingOut = false);
+      }
     }
   }
 
@@ -182,11 +243,28 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ── initials از نام کامل ─────────────────────────────────────────
   String get _initials {
     if (_fullName.trim().isEmpty) return '?';
-    final parts = _fullName.trim().split(' ');
+    final parts = _fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}';
     }
     return parts[0][0];
+  }
+
+  String get _displayName =>
+      _fullName.isNotEmpty ? _fullName : 'کاربر TripSync';
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature به‌زودی اضافه می‌شود'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -195,49 +273,68 @@ class _ProfileScreenState extends State<ProfileScreen>
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryColor),
-              )
-            : CustomScrollView(
-                slivers: [
-                  // ── Hero Header ─────────────────────────────────
-                  _buildHeroHeader(),
+        body: RefreshIndicator(
+          color: AppColors.primaryColor,
+          onRefresh: _refreshProfile,
+          child: _isLoading
+              ? const CustomScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverFillRemaining(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // ── Hero Header ─────────────────────────────────
+                    _buildHeroHeader(),
 
-                  // ── محتوا ──────────────────────────────────────
-                  SliverToBoxAdapter(
-                    child: FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SlideTransition(
-                        position: _slideAnim,
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            20,
-                            24,
-                            20,
-                            MediaQuery.of(context).padding.bottom + 32,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // اطلاعات حساب
-                              _buildInfoCard(),
-                              const SizedBox(height: 20),
+                    // ── محتوا ──────────────────────────────────────
+                    SliverToBoxAdapter(
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
+                        child: SlideTransition(
+                          position: _slideAnim,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              20,
+                              24,
+                              20,
+                              MediaQuery.of(context).padding.bottom + 32,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (_hasProfileError) ...[
+                                  _buildErrorBanner(),
+                                  const SizedBox(height: 16),
+                                ],
 
-                              // تنظیمات
-                              _buildSettingsCard(),
-                              const SizedBox(height: 28),
+                                // اطلاعات حساب
+                                _buildInfoCard(),
+                                const SizedBox(height: 20),
 
-                              // دکمه خروج
-                              _buildLogoutButton(),
-                            ],
+                                // تنظیمات
+                                _buildSettingsCard(),
+                                const SizedBox(height: 28),
+
+                                // دکمه خروج
+                                _buildLogoutButton(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -279,7 +376,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
                 children: [
-                  // ردیف بالا: بازگشت
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -305,11 +401,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                         height: 80,
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.20),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.40),
                             width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
@@ -326,7 +429,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       // نام کامل
                       Text(
-                        _fullName.isNotEmpty ? _fullName : '---',
+                        _displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -338,9 +443,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                       // ایمیل
                       Text(
-                        _email,
+                        _email.isNotEmpty ? _email : 'ایمیل ثبت نشده',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.70),
+                          color: Colors.white.withValues(alpha: 0.74),
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
                         ),
@@ -348,6 +455,71 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                   ),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerIconButton({
+    required IconData icon,
+    required VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.16),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(
+            icon,
+            color: onTap == null
+                ? Colors.white.withValues(alpha: 0.42)
+                : Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.errorColor.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.errorColor.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.errorColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              color: AppColors.errorColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'اطلاعات پروفایل کامل دریافت نشد. برای تلاش دوباره صفحه را پایین بکش.',
+              style: TextStyle(
+                color: AppColors.textDark,
+                fontSize: 13,
+                height: 1.5,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -370,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             iconColor: AppColors.primaryColor,
             iconBg: AppColors.primaryColor.withValues(alpha: 0.08),
             label: 'نام و نام خانوادگی',
-            value: _fullName.isNotEmpty ? _fullName : '---',
+            value: _displayName,
           ),
           _infoDivider(),
           _infoRow(
@@ -378,7 +550,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             iconColor: const Color(0xFF0891B2),
             iconBg: const Color(0xFFECFEFF),
             label: 'ایمیل',
-            value: _email.isNotEmpty ? _email : '---',
+            value: _email.isNotEmpty ? _email : 'ایمیل ثبت نشده',
           ),
         ],
       ),
@@ -399,9 +571,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             iconColor: const Color(0xFF7C3AED),
             iconBg: const Color(0xFFF5F3FF),
             label: 'تغییر رمز عبور',
-            onTap: () {
-              // TODO: context.push('/change-password');
-            },
+            onTap: () => _showComingSoon('تغییر رمز عبور'),
           ),
           _settingsDivider(),
           _settingsRow(
@@ -409,9 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             iconColor: const Color(0xFFF59E0B),
             iconBg: const Color(0xFFFFFBEB),
             label: 'اعلان‌ها',
-            onTap: () {
-              // TODO: context.push('/notifications');
-            },
+            onTap: () => _showComingSoon('اعلان‌ها'),
           ),
           _settingsDivider(),
           _settingsRow(
@@ -419,9 +587,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             iconColor: const Color(0xFF059669),
             iconBg: const Color(0xFFECFDF5),
             label: 'درباره TripSync',
-            onTap: () {
-              // TODO: context.push('/about');
-            },
+            onTap: () => _showComingSoon('درباره TripSync'),
           ),
         ],
       ),
@@ -435,39 +601,42 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
                 ),
               ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: AppColors.textMuted,
-            ),
-          ],
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -501,10 +670,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
       ),
       child: ElevatedButton(
-        onPressed: () {
-          _isLoggingOut ? null : _authService.signOut();
-          context.go('/login');
-        },
+        onPressed: _isLoggingOut ? null : _handleLogout,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -524,7 +690,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  const Text(
                     'خروج از حساب',
                     style: TextStyle(
                       color: AppColors.errorColor,
@@ -532,10 +698,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Transform.rotate(
                     angle: math.pi,
-                    child: Icon(
+                    child: const Icon(
                       Icons.logout_rounded,
                       color: AppColors.errorColor,
                       size: 20,
@@ -638,7 +804,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                SelectableText(
                   value,
                   style: const TextStyle(
                     fontSize: 15,
