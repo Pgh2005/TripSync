@@ -124,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         Icon(
                           Icons.favorite_border_rounded,
-                          color: AppColors.authprimaryColor,
+                          color: AppColors.authPrimaryColor,
                           size: 18,
                         ),
                         const SizedBox(width: 8),

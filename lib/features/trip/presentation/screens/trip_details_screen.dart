@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/features/expenses/presentation/widgets/expense_summary_card.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/data/models/member_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
@@ -28,7 +29,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   List<MemberModel> _members = [];
   bool _isLoadingMembers = true;
 
-  // ── owner check ──────────────────────────────────────────────────
   bool get _isOwner {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     return _trip.createdBy == currentUserId;
@@ -68,7 +68,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     }
   }
 
-  // ── حذف سفر با dialog تأیید ──────────────────────────────────────
   Future<void> _deleteTrip() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -209,7 +208,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     }
   }
 
-  // ── ویرایش سفر ──────────────────────────────────────────────────
   Future<void> _editTrip() async {
     final result = await context.push('/edit-trip', extra: _trip);
 
@@ -405,6 +403,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                         const SizedBox(height: 20),
                         _buildMembersSection(),
                         const SizedBox(height: 20),
+                        ExpenseSummaryCard(tripId: _trip.id),
+                        const SizedBox(height: 20),
                         _buildInviteButton(),
                       ],
                     ),
@@ -418,7 +418,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── Hero Header ──────────────────────────────────────────────────
   SliverAppBar _buildHeroHeader(BuildContext context) {
     return SliverAppBar(
       expandedHeight: 200,
@@ -445,19 +444,15 @@ class _TripDetailScreenState extends State<TripDetailScreen>
       ),
       child: Stack(
         children: [
-          // دایره‌های تزئینی
           Positioned(top: -40, left: -40, child: _decorCircle(160, 0.07)),
           Positioned(bottom: -50, right: -20, child: _decorCircle(180, 0.07)),
           Positioned(top: 60, left: 100, child: _decorCircle(60, 0.05)),
-
-          // محتوای hero
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
                 children: [
                   Spacer(),
-                  // ── اطلاعات سفر پایین هدر ──────────────────────
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -480,8 +475,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                               size: 26,
                             ),
                           ),
-                          Spacer(),
-                          // دکمه‌های owner
+                          const Spacer(),
                           if (_isOwner) ...[
                             _heroButton(
                               icon: Icons.edit_rounded,
@@ -498,7 +492,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                           ],
                         ],
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       Text(
                         _trip.title,
                         style: const TextStyle(
@@ -581,7 +575,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── کارت اطلاعات سفر ───────────────────────────────────────────
   Widget _buildInfoCard() {
     return _card(
       child: Column(
@@ -677,7 +670,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── بخش اعضا ─────────────────────────────────────────────────────
   Widget _buildMembersSection() {
     return _card(
       child: Column(
@@ -857,17 +849,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                     color: AppColors.textDark,
                   ),
                 ),
-                if (isTripOwner) ...[
-                  const SizedBox(height: 2),
-                  // const Text(
-                  //   'سازنده سفر',
-                  //   style: TextStyle(
-                  //     fontSize: 11,
-                  //     fontWeight: FontWeight.w600,
-                  //     color: AppColors.textMuted,
-                  //   ),
-                  // ),
-                ],
               ],
             ),
           ),
@@ -929,7 +910,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           ),
           const SizedBox(height: 4),
           const Text(
-            'دوستانت رو به سفر دعوت کن',
+            'دوستانت را به سفر دعوت کن',
             style: TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
         ],
@@ -937,7 +918,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── دکمه اشتراک لینک دعوت ───────────────────────────────────────
   Widget _buildInviteButton() {
     return Container(
       height: 56,
@@ -989,7 +969,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  // ── helper widgets ───────────────────────────────────────────────
   Widget _card({required Widget child}) {
     return Container(
       decoration: BoxDecoration(

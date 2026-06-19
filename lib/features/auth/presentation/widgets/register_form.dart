@@ -203,7 +203,7 @@ class _RegisterFormState extends State<RegisterForm> {
         gradient: LinearGradient(
           colors: [
             const Color.fromARGB(255, 20, 136, 138),
-            AppColors.authprimaryColor.withValues(alpha: 0.5),
+            AppColors.authPrimaryColor.withValues(alpha: 0.5),
           ],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
@@ -211,7 +211,7 @@ class _RegisterFormState extends State<RegisterForm> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AppColors.authprimaryColor.withValues(alpha: 0.3),
+            color: AppColors.authPrimaryColor.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),

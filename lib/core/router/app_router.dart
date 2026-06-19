@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tripsync/features/auth/presentation/screens/login_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/register_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/splash_screen.dart';
+import 'package:tripsync/features/expenses/presentation/screens/trip_expenses_screen.dart';
 import 'package:tripsync/features/profile/presentation/ProfileScreen.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/presentation/screens/EditTripScreen.dart';
@@ -19,13 +20,14 @@ final appRouter = GoRouter(
         return const HomeScreen();
       },
     ),
+    // register & login
     GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
     ),
-    GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    // Trip
     GoRoute(
       path: '/create-trip',
       builder: (context, state) => const CreateTripScreen(),
@@ -40,7 +42,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/edit-trip',
       builder: (context, state) {
-        final trip = state.extra as TripModel; // گرفتن آبجکت از extra
+        final trip = state.extra as TripModel;
         return EditTripScreen(trip: trip);
       },
     ),
@@ -50,10 +52,19 @@ final appRouter = GoRouter(
         return const JoinTripScreen();
       },
     ),
+    // Profile
     GoRoute(
       path: '/profile',
       builder: (context, state) {
         return const ProfileScreen();
+      },
+    ),
+    // Expenses
+    GoRoute(
+      path: '/trip-expenses',
+      builder: (context, state) {
+        final tripId = state.extra as String;
+        return TripExpensesScreen(tripId: tripId);
       },
     ),
   ],
