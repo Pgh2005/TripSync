@@ -36,7 +36,11 @@ extension ExpenseCategoryX on ExpenseCategory {
   }
 
   static ExpenseCategory fromString(String? value) {
-    switch (value) {
+    if (value == null) return ExpenseCategory.other;
+
+    final normalized = value.trim().toLowerCase();
+
+    switch (normalized) {
       case 'food':
         return ExpenseCategory.food;
       case 'transport':

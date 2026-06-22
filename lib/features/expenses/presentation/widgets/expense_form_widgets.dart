@@ -82,11 +82,7 @@ class CategoryDropdown extends StatelessWidget {
           value: category,
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(_iconFor(category), size: 18, color: AppColors.primaryColor),
-              const SizedBox(width: 8),
-              Text(category.labelFa),
-            ],
+            children: [Text(category.labelFa)],
           ),
         );
       }).toList(),

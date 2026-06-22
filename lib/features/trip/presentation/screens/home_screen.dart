@@ -84,13 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ── محتوا ─────────────────────────────────────────────
             _isLoading
-                ? const SliverFillRemaining(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                  )
+                ? const SliverFillRemaining(child: Center(child: Text('')))
                 : SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       20,

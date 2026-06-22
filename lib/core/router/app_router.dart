@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tripsync/features/auth/presentation/screens/login_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/register_screen.dart';
 import 'package:tripsync/features/auth/presentation/screens/splash_screen.dart';
+import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/screens/add_expenses_screen.dart';
 import 'package:tripsync/features/expenses/presentation/screens/trip_expenses_screen.dart';
 import 'package:tripsync/features/profile/presentation/ProfileScreen.dart';
@@ -73,6 +74,15 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final tripId = state.extra as String;
         return AddExpenseScreen(tripId: tripId);
+      },
+    ),
+    GoRoute(
+      path: '/trips/:tripId/edit-expense',
+      builder: (context, state) {
+        final tripId = state.pathParameters['tripId']!;
+        final expense = state.extra as ExpenseModel;
+
+        return AddExpenseScreen(tripId: tripId, expense: expense);
       },
     ),
   ],

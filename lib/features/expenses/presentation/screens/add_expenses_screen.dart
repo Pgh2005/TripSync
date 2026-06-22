@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:tripsync/core/enums/expense_category.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/appbar_primary.dart';
@@ -14,8 +16,11 @@ import 'package:tripsync/features/trip/presentation/widget/date_picker/persian_d
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   final String tripId;
+  final ExpenseModel? expense;
 
-  const AddExpenseScreen({super.key, required this.tripId});
+  const AddExpenseScreen({super.key, required this.tripId, this.expense});
+
+  bool get isEdit => expense != null;
 
   @override
   ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -38,6 +43,30 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _descriptionController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    final expense = widget.expense;
+
+    if (expense != null) {
+      _descriptionController.text = expense.description;
+      _amountController.text = expense.amount.toString();
+      _category = ExpenseCategoryX.fromString(expense.category);
+      _payerUserId = expense.paidBy;
+      _date = expense.createdAt;
+    }
+  }
+
+  String? get _currentUserId => Supabase.instance.client.auth.currentUser?.id;
+
+  bool get _canDeleteExpense {
+    final expense = widget.expense;
+    if (expense == null) return false;
+
+    return expense.paidBy == _currentUserId;
   }
 
   Future<void> _pickDate() async {
@@ -78,73 +107,155 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   // ── ذخیره هزینه ──────────────────────────────────────────────────
   Future<void> _save() async {
-    // اعتبارسنجی فیلدهای متنی فرم (توضیحات، مبلغ، دسته‌بندی)
     if (!_formKey.currentState!.validate()) return;
 
-    if (_payerUserId == null) {
-      _showSnack('لطفاً پرداخت‌کننده را انتخاب کنید', isError: true);
-      return;
-    }
+    setState(() => _isSaving = true);
 
-    if (_splitUserIds.isEmpty) {
-      _showSnack('حداقل یک نفر را برای تقسیم هزینه انتخاب کنید', isError: true);
-      return;
+    final repository = ref.read(expenseRepositoryProvider);
+
+    final description = _descriptionController.text.trim();
+    final amount = double.parse(_amountController.text);
+
+    try {
+      if (widget.isEdit) {
+        await repository.updateExpense(
+          expenseId: widget.expense!.id,
+          description: description,
+          amount: amount,
+          category: _category!.value,
+          paidBy: _payerUserId!,
+          date: _date,
+          splitUserIds: _splitUserIds.toList(),
+        );
+      } else {
+        await repository.addExpense(
+          tripId: widget.tripId,
+          description: description,
+          amount: amount,
+          category: _category!.value,
+          paidBy: _payerUserId!,
+          date: _date,
+          splitBetweenUserIds: _splitUserIds.toList(),
+        );
+      }
+
+      ref.invalidate(expenseListProvider(widget.tripId));
+      ref.invalidate(expenseTotalProvider(widget.tripId));
+
+      if (mounted) {
+        context.pop(true);
+      }
+    } catch (e) {
+      // error handling
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
+  }
+
+  Future<void> _deleteExpense() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف هزینه'),
+        content: const Text('آیا از حذف این هزینه مطمئن هستی؟'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: const Text('انصراف'),
+          ),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text(
+              'حذف',
+              style: TextStyle(color: AppColors.errorColor),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
 
     setState(() => _isSaving = true);
 
     try {
       final repository = ref.read(expenseRepositoryProvider);
-      await repository.addExpense(
-        tripId: widget.tripId,
-        description: _descriptionController.text.trim(),
-        amount: _parsedAmount!,
-        paidBy: _payerUserId!,
-        category: _category!.value,
-        date: _date,
-        splitBetweenUserIds: _splitUserIds.toList(),
-      );
 
-      if (!mounted) return;
+      await repository.deleteExpense(widget.expense!.id);
 
-      // رفرش لیست هزینه‌ها و جمع کل برای این سفر
       ref.invalidate(expenseListProvider(widget.tripId));
       ref.invalidate(expenseTotalProvider(widget.tripId));
 
-      _showSnack('هزینه با موفقیت ثبت شد');
-      context.pop(true);
+      if (mounted) {
+        context.pop(true);
+      }
     } catch (e) {
-      if (!mounted) return;
-      _showSnack('خطا در ثبت هزینه: $e', isError: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در حذف هزینه: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
-  void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError
-                  ? Icons.error_outline_rounded
-                  : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: isError
-            ? AppColors.errorColor
-            : AppColors.successColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
+  // Future<void> _deleteExpense() async {
+  //   final confirmed = await showDialog<bool>(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('حذف هزینه'),
+  //       content: const Text('آیا از حذف این هزینه مطمئن هستی؟'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => context.pop(false),
+  //           child: const Text('انصراف'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () => context.pop(true),
+  //           child: const Text(
+  //             'حذف',
+  //             style: TextStyle(color: AppColors.errorColor),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+
+  //   if (confirmed != true) return;
+
+  //   setState(() => _isSaving = true);
+
+  //   try {
+  //     final repository = ref.read(expenseRepositoryProvider);
+
+  //     await repository.deleteExpense(widget.expense!.id);
+
+  //     if (mounted) {
+  //       context.pop();
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('خطا در حذف هزینه: $e'),
+  //           backgroundColor: AppColors.errorColor,
+  //         ),
+  //       );
+  //     }
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() => _isSaving = false);
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -318,6 +429,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           ),
 
           // ── دکمه ثبت — همیشه پایین صفحه ─────────────────────────
+          if (_canDeleteExpense) _buildDeleteButton(),
           _buildSaveButton(),
         ],
       ),
@@ -459,7 +571,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             const Icon(
               Icons.calendar_today_rounded,
               size: 20,
-              color: AppColors.primaryColor,
+              color: AppColors.textMuted,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -473,7 +585,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               ),
             ),
             const Icon(
-              Icons.chevron_left_rounded,
+              Icons.keyboard_arrow_down_rounded,
               color: AppColors.textMuted,
               size: 20,
             ),
@@ -538,18 +650,20 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       strokeWidth: 2.5,
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.check_circle_outline_rounded,
+                        widget.isEdit
+                            ? Icons.save_rounded
+                            : Icons.check_circle_outline_rounded,
                         color: Colors.white,
                         size: 22,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Text(
-                        'ثبت هزینه',
-                        style: TextStyle(
+                        widget.isEdit ? 'ذخیره تغییرات' : 'ثبت هزینه',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -627,4 +741,31 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   Widget _divider() => Container(height: 1, color: AppColors.borderColor);
+
+  Widget _buildDeleteButton() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      color: Colors.white,
+      child: SizedBox(
+        height: 48,
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _isSaving ? null : _deleteExpense,
+          icon: const Icon(Icons.delete_outline_rounded),
+          label: const Text('حذف هزینه'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.errorColor,
+            side: const BorderSide(color: AppColors.errorColor, width: 1.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

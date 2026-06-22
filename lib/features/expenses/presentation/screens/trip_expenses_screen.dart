@@ -65,7 +65,15 @@ class TripExpensesScreen extends ConsumerWidget {
                     );
                   }
                   final expense = expenses[index - 1];
-                  return ExpenseListItem(expense: expense);
+                  return ExpenseListItem(
+                    expense: expense,
+                    onEdit: () {
+                      context.push(
+                        '/trips/${expense.tripId}/edit-expense',
+                        extra: expense,
+                      );
+                    },
+                  );
                 },
               ),
             );

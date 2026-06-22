@@ -10,17 +10,18 @@ class ExpenseRepository {
     final response = await _client
         .from('expenses')
         .select('''
-      id,
-      trip_id,
-      description,
-      amount,
-      created_at,
-      paid_by,
-      payer:profiles!inner(
-        full_name,
-        avatar_url
-      )
-    ''')
+        id,
+        trip_id,
+        description,
+        amount,
+        category,
+        created_at,
+        paid_by,
+        payer:profiles!inner(
+          full_name,
+          avatar_url
+        )
+      ''')
         .eq('trip_id', tripId)
         .order('created_at', ascending: false);
 
@@ -62,5 +63,49 @@ class ExpenseRepository {
     }).toList();
 
     await _client.from('expense_splits').insert(splits);
+  }
+
+  Future<void> deleteExpense(String expenseId) async {
+    final client = Supabase.instance.client;
+
+    // حذف split ها
+    await client.from('expense_splits').delete().eq('expense_id', expenseId);
+
+    // حذف خود expense
+    await client.from('expenses').delete().eq('id', expenseId);
+  }
+
+  Future<void> updateExpense({
+    required String expenseId,
+    required String description,
+    required double amount,
+    required String category,
+    required String paidBy,
+    required DateTime date,
+    required List<String> splitUserIds,
+  }) async {
+    final client = Supabase.instance.client;
+
+    await client
+        .from('expenses')
+        .update({
+          'description': description,
+          'amount': amount,
+          'category': category,
+          'paid_by': paidBy,
+          'created_at': date.toIso8601String(),
+        })
+        .eq('id', expenseId);
+
+    // حذف split های قبلی
+    await client.from('expense_splits').delete().eq('expense_id', expenseId);
+
+    final share = amount / splitUserIds.length;
+
+    final splits = splitUserIds.map((userId) {
+      return {'expense_id': expenseId, 'user_id': userId, 'amount': share};
+    }).toList();
+
+    await client.from('expense_splits').insert(splits);
   }
 }
