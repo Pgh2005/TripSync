@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:tripsync/core/enums/expense_category.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
 import 'package:tripsync/core/utils/money_parsing.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
-// حتماً مطمئن شو که مدل ExpenseSplitModel از مسیر زیر ایمپورت شده باشد
 import 'package:tripsync/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/appbar_primary.dart';
@@ -42,6 +40,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   bool _isSaving = false;
   bool _isLoadingSplits =
       false; // برای وضعیت لود شدن اطلاعات تقسیم هزینه از دیتابیس
+
+  bool get _canEditExpense {
+    final expense = widget.expense;
+
+    // در حالت ساخت هزینه جدید همه می‌توانند
+    if (expense == null) return true;
+
+    // فقط پرداخت کننده می‌تواند ویرایش کند
+    return expense.paidBy == _currentUserId;
+  }
 
   @override
   void dispose() {
@@ -437,6 +445,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       ],
                     ),
                   ),
+                  SizedBox(height: 20),
+                  Text(
+                    'فقط پرداخت‌کننده می‌تواند اطلاعات هزینه را ویرایش کند',
+                    style: TextStyle(
+                      color: AppColors.primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 10),
                 ],
               ),
             ),
@@ -444,7 +462,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
           // ── دکمه ثبت/ویرایش — همیشه پایین صفحه ─────────────────────────
           if (_canDeleteExpense) _buildDeleteButton(),
-          _buildSaveButton(),
+          if (_canEditExpense) _buildSaveButton(),
         ],
       ),
     );
@@ -648,7 +666,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ],
           ),
           child: ElevatedButton(
-            onPressed: _isSaving || _isLoadingSplits ? null : _save,
+            onPressed: _isSaving || _isLoadingSplits || !_canEditExpense
+                ? null
+                : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
