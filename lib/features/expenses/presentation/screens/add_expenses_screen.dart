@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:tripsync/core/enums/expense_category.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
+import 'package:tripsync/core/utils/money_input_formatter.dart';
 import 'package:tripsync/core/utils/money_parsing.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_providers.dart';
@@ -525,6 +527,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     return TextFormField(
       controller: _amountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: false),
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        MoneyInputFormatter(),
+      ],
       style: const TextStyle(
         fontSize: 16,
         color: AppColors.primaryColor,
