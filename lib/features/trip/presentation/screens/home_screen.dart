@@ -84,7 +84,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ── محتوا ─────────────────────────────────────────────
             _isLoading
-                ? const SliverFillRemaining(child: Center(child: Text('')))
+                ? const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  )
                 : SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       20,
@@ -228,25 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-
-        // if (_trips.isNotEmpty)
-        //   Container(
-        //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        //     decoration: BoxDecoration(
-        //       color: AppColors.primaryColor.withValues(alpha: 0.08),
-        //       borderRadius: BorderRadius.circular(20),
-        //     ),
-        //     child: Text(
-        //       '${_trips.length} سفر',
-        //       style: const TextStyle(
-        //         fontSize: 12,
-        //         fontWeight: FontWeight.w700,
-        //         color: AppColors.primaryColor,
-        //       ),
-        //     ),
-        //   ),
-        const SizedBox(width: 10),
-
         OutlinedButton.icon(
           onPressed: () async {
             final result = await context.push('/join-trip');

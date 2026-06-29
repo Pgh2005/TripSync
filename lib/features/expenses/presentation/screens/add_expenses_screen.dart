@@ -6,7 +6,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/enums/expense_category.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/core/utils/money_formatter.dart';
+import 'package:tripsync/core/utils/money_parsing.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
+// حتماً مطمئن شو که مدل ExpenseSplitModel از مسیر زیر ایمپورت شده باشد
 import 'package:tripsync/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/appbar_primary.dart';
@@ -37,6 +40,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   DateTime _date = DateTime.now();
 
   bool _isSaving = false;
+  bool _isLoadingSplits =
+      false; // برای وضعیت لود شدن اطلاعات تقسیم هزینه از دیتابیس
 
   @override
   void dispose() {
@@ -53,10 +58,42 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     if (expense != null) {
       _descriptionController.text = expense.description;
-      _amountController.text = expense.amount.toString();
+      _amountController.text = expense.amount.toMoney();
       _category = ExpenseCategoryX.fromString(expense.category);
       _payerUserId = expense.paidBy;
       _date = expense.createdAt;
+
+      // بارگذاری تقسیم هزینه‌های قبلی از دیتابیس
+      _loadExpenseSplits();
+    }
+  }
+
+  // متد واکشی افراد مشارکت‌کننده در هزینه در حالت ویرایش
+  Future<void> _loadExpenseSplits() async {
+    setState(() => _isLoadingSplits = true);
+    try {
+      final repository = ref.read(expenseRepositoryProvider);
+      final splits = await repository.getExpenseSplits(widget.expense!.id);
+
+      setState(() {
+        _splitUserIds.clear();
+        for (var split in splits) {
+          _splitUserIds.add(split.userId);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در بارگذاری سهم اعضا: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingSplits = false);
+      }
     }
   }
 
@@ -103,18 +140,28 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     });
   }
 
-  double? get _parsedAmount => double.tryParse(_amountController.text.trim());
+  double? get _parsedAmount => _amountController.text.toMoneyDouble();
 
   // ── ذخیره هزینه ──────────────────────────────────────────────────
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_splitUserIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حداقل یک نفر را برای تقسیم هزینه انتخاب کنید'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
 
     final repository = ref.read(expenseRepositoryProvider);
 
     final description = _descriptionController.text.trim();
-    final amount = double.parse(_amountController.text);
+    final amount = _amountController.text.toMoneyDouble();
 
     try {
       if (widget.isEdit) {
@@ -146,7 +193,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         context.pop(true);
       }
     } catch (e) {
-      // error handling
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در ذخیره هزینه: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -207,66 +261,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     }
   }
 
-  // Future<void> _deleteExpense() async {
-  //   final confirmed = await showDialog<bool>(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text('حذف هزینه'),
-  //       content: const Text('آیا از حذف این هزینه مطمئن هستی؟'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => context.pop(false),
-  //           child: const Text('انصراف'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () => context.pop(true),
-  //           child: const Text(
-  //             'حذف',
-  //             style: TextStyle(color: AppColors.errorColor),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-
-  //   if (confirmed != true) return;
-
-  //   setState(() => _isSaving = true);
-
-  //   try {
-  //     final repository = ref.read(expenseRepositoryProvider);
-
-  //     await repository.deleteExpense(widget.expense!.id);
-
-  //     if (mounted) {
-  //       context.pop();
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text('خطا در حذف هزینه: $e'),
-  //           backgroundColor: AppColors.errorColor,
-  //         ),
-  //       );
-  //     }
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() => _isSaving = false);
-  //     }
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
-    // لیست اعضای سفر — برای انتخاب پرداخت‌کننده و تقسیم هزینه
     final membersAsync = ref.watch(tripMembersProvider(widget.tripId));
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: AppPrimaryAppBar(title: 'افزودن هزینه'),
+        appBar: AppPrimaryAppBar(
+          title: widget.isEdit ? 'ویرایش هزینه' : 'افزودن هزینه',
+        ),
         body: membersAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primaryColor),
@@ -382,7 +387,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                 Icons.groups_outlined,
                               ),
                             ),
-                            if (members.isNotEmpty)
+                            if (members.isNotEmpty && !_isLoadingSplits)
                               GestureDetector(
                                 onTap: () => _selectAllForSplit(members),
                                 child: Container(
@@ -411,7 +416,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        if (members.isEmpty)
+                        if (_isLoadingSplits)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          )
+                        else if (members.isEmpty)
                           _buildNoMembersHint()
                         else
                           SplitMembersSelector(
@@ -428,7 +442,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
           ),
 
-          // ── دکمه ثبت — همیشه پایین صفحه ─────────────────────────
+          // ── دکمه ثبت/ویرایش — همیشه پایین صفحه ─────────────────────────
           if (_canDeleteExpense) _buildDeleteButton(),
           _buildSaveButton(),
         ],
@@ -544,10 +558,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         if (v == null || v.trim().isEmpty) {
           return 'مبلغ نمی‌تواند خالی باشد';
         }
-        final parsed = double.tryParse(v.trim());
-        if (parsed == null || parsed <= 0) {
+        final parsed = v.toMoneyDouble();
+        if (parsed <= 0) {
           return 'مبلغ معتبر وارد کنید';
         }
+
         return null;
       },
     );
@@ -633,7 +648,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ],
           ),
           child: ElevatedButton(
-            onPressed: _isSaving ? null : _save,
+            onPressed: _isSaving || _isLoadingSplits ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
@@ -750,7 +765,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         height: 48,
         width: double.infinity,
         child: OutlinedButton.icon(
-          onPressed: _isSaving ? null : _deleteExpense,
+          onPressed: _isSaving || _isLoadingSplits ? null : _deleteExpense,
           icon: const Icon(Icons.delete_outline_rounded),
           label: const Text('حذف هزینه'),
           style: OutlinedButton.styleFrom(

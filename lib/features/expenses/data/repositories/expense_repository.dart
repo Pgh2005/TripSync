@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tripsync/features/expenses/data/models/expense_split_model.dart';
 import '../models/expense_model.dart';
 
 class ExpenseRepository {
@@ -107,5 +108,22 @@ class ExpenseRepository {
     }).toList();
 
     await client.from('expense_splits').insert(splits);
+  }
+
+  Future<List<ExpenseSplitModel>> getExpenseSplits(String expenseId) async {
+    final response = await _client
+        .from('expense_splits')
+        .select('''
+          id,
+          expense_id,
+          user_id,
+          amount,
+          created_at
+        ''')
+        .eq('expense_id', expenseId);
+
+    return (response as List)
+        .map((e) => ExpenseSplitModel.fromJson(e))
+        .toList();
   }
 }

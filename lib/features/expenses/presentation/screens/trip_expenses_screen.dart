@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/core/utils/money_formatter.dart';
 import '../providers/expense_providers.dart';
 import '../widgets/expense_list_item.dart';
 
@@ -215,7 +216,7 @@ class _ExpenseTotalHeader extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '${_formatMoney(total)} تومان',
+                '${total.toMoney()} تومان',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
@@ -258,20 +259,6 @@ class _ExpenseTotalHeader extends StatelessWidget {
         color: Colors.white.withValues(alpha: opacity),
       ),
     );
-  }
-
-  static String _formatMoney(double value) {
-    final intValue = value.round();
-    final text = intValue.toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      final positionFromEnd = text.length - i;
-      buffer.write(text[i]);
-      if (positionFromEnd > 1 && positionFromEnd % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    return buffer.toString();
   }
 }
 
