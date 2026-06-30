@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
-import '../providers/expense_providers.dart';
+import '../providers/expense_provider.dart';
 import '../widgets/expense_list_item.dart';
 
 class TripExpensesScreen extends ConsumerWidget {

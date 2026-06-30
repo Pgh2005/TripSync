@@ -126,4 +126,24 @@ class ExpenseRepository {
         .map((e) => ExpenseSplitModel.fromJson(e))
         .toList();
   }
+
+  Future<List<ExpenseSplitModel>> getSplitsByTripId(String tripId) async {
+    final response = await _client
+        .from('expense_splits')
+        .select('''
+        id,
+        expense_id,
+        user_id,
+        amount,
+        created_at,
+        expense:expenses!inner(
+          trip_id
+        )
+      ''')
+        .eq('expense.trip_id', tripId);
+
+    return (response as List)
+        .map((e) => ExpenseSplitModel.fromJson(e))
+        .toList();
+  }
 }

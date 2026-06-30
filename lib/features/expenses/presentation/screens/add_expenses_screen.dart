@@ -10,7 +10,7 @@ import 'package:tripsync/core/utils/money_formatter.dart';
 import 'package:tripsync/core/utils/money_input_formatter.dart';
 import 'package:tripsync/core/utils/money_parsing.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
-import 'package:tripsync/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:tripsync/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/appbar_primary.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/expense_form_widgets.dart';

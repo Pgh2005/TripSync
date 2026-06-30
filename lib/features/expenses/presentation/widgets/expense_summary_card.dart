@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 
-import '../providers/expense_providers.dart';
+import '../providers/expense_provider.dart';
 
 class ExpenseSummaryCard extends ConsumerWidget {
   final String tripId;
