@@ -56,7 +56,10 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } on AuthException catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'ایمیل یا رمز عبور اشتباه است ');
+        SnackbarHelper.showError(
+          context,
+          'ایمیل یا رمز عبور اشتباه است : ${e.message}',
+        );
       }
     } catch (e) {
       if (mounted) {
