@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/expense_summary_card.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
 import 'package:tripsync/features/trip/data/models/member_model.dart';
@@ -199,12 +200,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطا در حذف سفر: $e'),
-          backgroundColor: AppColors.errorColor,
-        ),
-      );
+      SnackbarHelper.showError(context, 'خطا در حذف سفر: $e');
     }
   }
 
@@ -354,23 +350,12 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         _members.removeWhere((item) => item.id == member.id);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('عضو با موفقیت حذف شد'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      SnackbarHelper.showSuccess(context, 'عضو با موفقیت حذف شد');
     } catch (e) {
       debugPrint('Remove member error: $e');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('حذف عضو انجام نشد'),
-            backgroundColor: AppColors.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        SnackbarHelper.showError(context, 'حذف عضو انجام نشد: $e');
       }
     }
   }

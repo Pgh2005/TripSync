@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/auth/data/services/auth_service.dart';
 import 'package:tripsync/features/auth/presentation/widgets/auth_hero.dart';
 import 'dart:ui';
@@ -65,14 +66,19 @@ class _RegisterScreenState extends State<RegisterScreen>
         );
 
         if (mounted) {
+          SnackbarHelper.showSuccess(
+            context,
+            'حساب کاربری شما با موفقیت ایجاد شد',
+          );
           context.go('/home');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        SnackbarHelper.showError(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+          'خطا در ایجاد حساب کاربری',
+        );
       }
     } finally {
       if (mounted) {
@@ -95,7 +101,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             Image.asset(
               'assets/images/TravelBg.png',
               fit: BoxFit.cover,
-              alignment: const Alignment(0, 0.4),
+              alignment: Alignment.center,
               errorBuilder: (_, _, _) => Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -107,13 +113,13 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
 
-            // gradiant overlay
+            // Gradient overlay
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withValues(alpha: 0.25),
-                    Colors.black.withValues(alpha: 0.60),
+                    Colors.black.withValues(alpha: 0.10),
+                    Colors.black.withValues(alpha: 0.65),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -121,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
 
-            // content
+            // Content
             SafeArea(
               bottom: false,
               child: SingleChildScrollView(
@@ -133,15 +139,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                   child: SlideTransition(
                     position: _slideAnim,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 0,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          AuthHero(imageSize: 150),
-                          const SizedBox(height: 50),
+                          const SizedBox(height: 60),
+                          const AuthHero(),
+                          const SizedBox(height: 40),
                           RegisterForm(
                             onRegister: _handleRegister,
                             isLoading: _isLoading,

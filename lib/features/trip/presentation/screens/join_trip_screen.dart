@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 
@@ -29,7 +30,7 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
     final code = _codeController.text.trim().toUpperCase();
 
     if (code.isEmpty) {
-      _showError('لطفاً کد دعوت را وارد کنید');
+      SnackbarHelper.showWarning(context, 'لطفاً کد دعوت را وارد کنید');
       return;
     }
 
@@ -39,7 +40,8 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
       final trip = await _tripService.getTripByInviteCode(code);
 
       if (trip == null) {
-        _showError('کد دعوت معتبر نیست');
+        SnackbarHelper.showError(context, 'کد دعوت معتبر نیست');
+        setState(() => _isLoading = false);
         return;
       }
 
@@ -47,9 +49,7 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('با موفقیت به سفر پیوستید 🎉')),
-      );
+      SnackbarHelper.showSuccess(context, 'با موفقیت به سفر پیوستید 🎉');
 
       context.pop(true);
     } catch (e) {
@@ -57,20 +57,12 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
 
       if (!mounted) return;
 
-      _showError('خطا در پیوستن به سفر');
+      SnackbarHelper.showError(context, 'خطا در پیوستن به سفر');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _showError(String message) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
   }
 
   @override

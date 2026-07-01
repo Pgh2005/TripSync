@@ -9,6 +9,7 @@ import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
 import 'package:tripsync/core/utils/money_input_formatter.dart';
 import 'package:tripsync/core/utils/money_parsing.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_provider.dart';
@@ -93,12 +94,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطا در بارگذاری سهم اعضا: $e'),
-            backgroundColor: AppColors.errorColor,
-          ),
-        );
+        SnackbarHelper.showError(context, 'خطا در بارگذاری سهم اعضا: $e');
       }
     } finally {
       if (mounted) {
@@ -157,11 +153,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_splitUserIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('حداقل یک نفر را برای تقسیم هزینه انتخاب کنید'),
-          backgroundColor: AppColors.errorColor,
-        ),
+      SnackbarHelper.showError(
+        context,
+        'حداقل یک نفر را برای تقسیم هزینه انتخاب کنید',
       );
       return;
     }
@@ -204,12 +198,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطا در ذخیره هزینه: $e'),
-            backgroundColor: AppColors.errorColor,
-          ),
-        );
+        SnackbarHelper.showError(context, 'خطا در ذخیره هزینه: $e');
       }
     } finally {
       if (mounted) {
@@ -257,12 +246,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطا در حذف هزینه: $e'),
-            backgroundColor: AppColors.errorColor,
-          ),
-        );
+        SnackbarHelper.showError(context, 'خطا در حذف هزینه: $e');
       }
     } finally {
       if (mounted) {
