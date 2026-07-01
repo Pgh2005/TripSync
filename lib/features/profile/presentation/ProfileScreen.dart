@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/auth/data/services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -81,12 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       setState(() => _hasProfileError = true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('خطا در دریافت اطلاعات پروفایل'),
-          backgroundColor: AppColors.errorColor,
-        ),
-      );
+      SnackbarHelper.showError(context, 'خطا در دریافت اطلاعات پروفایل: $e');
     } finally {
       if (!mounted) return;
 
@@ -117,12 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('خطا در خروج از حساب'),
-          backgroundColor: AppColors.errorColor,
-        ),
-      );
+      SnackbarHelper.showError(context, 'خطا در خروج از حساب: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoggingOut = false);
@@ -258,12 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       _fullName.isNotEmpty ? _fullName : 'کاربر TripSync';
 
   void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature به‌زودی اضافه می‌شود'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    SnackbarHelper.showInfo(context, '$feature به‌زودی اضافه می‌شود');
   }
 
   @override

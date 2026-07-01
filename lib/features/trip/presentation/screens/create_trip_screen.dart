@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 import 'package:tripsync/features/trip/presentation/widget/date_picker/persian_date_picker_sheet.dart';
@@ -68,9 +69,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (_startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لطفاً تاریخ سفر را انتخاب کنید')),
-      );
+      SnackbarHelper.showWarning(context, 'لطفاً تاریخ سفر را انتخاب کنید');
       return;
     }
 
@@ -85,17 +84,13 @@ class _CreateTripScreenState extends State<CreateTripScreen>
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('سفر با موفقیت ایجاد شد')));
+      SnackbarHelper.showSuccess(context, 'سفر با موفقیت ایجاد شد');
 
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('خطا: $e')));
+      SnackbarHelper.showError(context, 'خطا در ایجاد سفر');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -149,228 +144,142 @@ class _CreateTripScreenState extends State<CreateTripScreen>
   // ── Cover Section ────────────────────────────────────────────────
   Widget _buildCoverSection() {
     return Container(
-      height: 200,
+      height: 180,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: [
-            AppColors.primaryColor,
-            AppColors.primaryColor.withValues(alpha: 0.60),
+            AppColors.primaryColor.withValues(alpha: 0.35),
+            AppColors.primaryColor.withValues(alpha: 0.15),
           ],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor.withValues(alpha: 0.30),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryColor.withValues(alpha: 0.20),
+          width: 1.5,
+        ),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -30,
-            left: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.07),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_photo_alternate_rounded,
+              size: 50,
+              color: AppColors.primaryColor.withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'افزودن تصویر کاور (به زودی)',
+              style: TextStyle(
+                color: AppColors.primaryColor.withValues(alpha: 0.6),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          Positioned(
-            bottom: -40,
-            right: -10,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 20,
-            left: 80,
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.30),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.travel_explore_rounded,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'سفر جدید شما',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'جزئیات سفرت رو پایین وارد کن',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.70),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // ── فرم ─────────────────────────────────────────────────────────
+  // ── Form Card ────────────────────────────────────────────────────
   Widget _buildFormCard() {
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderColor, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildFieldLabel('عنوان سفر', Icons.edit_note_rounded),
-          const SizedBox(height: 8),
+          _buildLabel('عنوان سفر', Icons.title_rounded),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: _titleController,
-            hint: 'مثلاً: سفر رامسر',
-            icon: Icons.card_travel_rounded,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) {
-                return 'عنوان سفر نمی‌تواند خالی باشد';
-              }
-              if (v.trim().length < 2) return 'عنوان باید حداقل ۲ کاراکتر باشد';
-              return null;
-            },
+            hint: 'مثال: سفر به شمال',
+            validator: (val) =>
+                (val == null || val.trim().isEmpty) ? 'عنوان الزامی است' : null,
           ),
-
-          const SizedBox(height: 20),
-          _buildDivider(),
-          const SizedBox(height: 20),
-
-          _buildFieldLabel('مقصد', Icons.location_on_outlined),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          _buildLabel('مقصد', Icons.location_on_rounded),
+          const SizedBox(height: 10),
           _buildTextField(
             controller: _destinationController,
-            hint: 'مثلاً: رامسر',
-            icon: Icons.location_on_rounded,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) {
-                return 'مقصد نمی‌تواند خالی باشد';
-              }
-              return null;
-            },
+            hint: 'مثال: رامسر',
+            validator: (val) =>
+                (val == null || val.trim().isEmpty) ? 'مقصد الزامی است' : null,
           ),
-
-          const SizedBox(height: 20),
-          _buildDivider(),
-          const SizedBox(height: 20),
-
-          _buildFieldLabel('تاریخ شروع', Icons.calendar_month_outlined),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          _buildLabel('تاریخ شروع', Icons.calendar_today_rounded),
+          const SizedBox(height: 10),
           _buildDatePicker(),
         ],
       ),
     );
   }
 
-  Widget _buildFieldLabel(String text, IconData icon) {
+  // ── Label ────────────────────────────────────────────────────────
+  Widget _buildLabel(String text, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
-        const SizedBox(width: 6),
+        Icon(icon, size: 18, color: AppColors.primaryColor),
+        const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.textDark,
+            color: Colors.grey.shade800,
           ),
         ),
       ],
     );
   }
 
+  // ── فیلد متنی ─────────────────────────────────────────────────────
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
-    required IconData icon,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       validator: validator,
-      style: const TextStyle(
-        fontSize: 15,
-        color: AppColors.textDark,
-        fontWeight: FontWeight.w500,
-      ),
+      style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFFB0BAC9), fontSize: 14),
-        prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         filled: true,
         fillColor: AppColors.backgroundColor,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
         ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.borderColor,
-            width: 1.5,
-          ),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -397,17 +306,17 @@ class _CreateTripScreenState extends State<CreateTripScreen>
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: hasDate
-                ? AppColors.primaryColor.withValues(alpha: 0.40)
-                : AppColors.borderColor,
-            width: hasDate ? 2 : 1.5,
+                ? AppColors.primaryColor
+                : Colors.grey.shade300.withValues(alpha: 0.5),
+            width: hasDate ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
             Icon(
-              Icons.calendar_today_rounded,
+              Icons.event_rounded,
+              color: hasDate ? AppColors.primaryColor : Colors.grey.shade400,
               size: 20,
-              color: hasDate ? AppColors.primaryColor : AppColors.textMuted,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -416,45 +325,25 @@ class _CreateTripScreenState extends State<CreateTripScreen>
                     ? AppDateFormatter.toJalali(_startDate!)
                     : 'انتخاب تاریخ',
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: hasDate ? FontWeight.w600 : FontWeight.w400,
-                  color: hasDate ? AppColors.textDark : const Color(0xFFB0BAC9),
+                  fontSize: 14,
+                  color: hasDate
+                      ? AppColors.primaryColor
+                      : Colors.grey.shade400,
+                  fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),
-            if (hasDate)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'انتخاب شد',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-              )
-            else
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textMuted,
-                size: 20,
-              ),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              color: hasDate ? AppColors.primaryColor : Colors.grey.shade400,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDivider() {
-    return Container(height: 1, color: AppColors.borderColor);
-  }
-
-  // ── دکمه ایجاد سفر ──────────────────────────────────────────────
+  // ── دکمه ایجاد ───────────────────────────────────────────────────
   Widget _buildSubmitButton() {
     return Container(
       height: 56,

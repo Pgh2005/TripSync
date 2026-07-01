@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
@@ -90,7 +91,8 @@ class _EditTripScreenState extends State<EditTripScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (_startDate == null) {
-      _showSnack('لطفاً تاریخ سفر را انتخاب کنید', isError: true);
+      SnackbarHelper.showError(context, 'لطفاً تاریخ سفر را انتخاب کنید');
+      // _showSnack('لطفاً تاریخ سفر را انتخاب کنید', isError: true);
       return;
     }
 
@@ -105,11 +107,12 @@ class _EditTripScreenState extends State<EditTripScreen>
       );
 
       if (!mounted) return;
-      _showSnack('سفر با موفقیت ویرایش شد');
+      SnackbarHelper.showSuccess(context, 'سفر با موفقیت ویرایش شد');
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
-      _showSnack('خطا: $e', isError: true);
+      SnackbarHelper.showError(context, 'خطا در ویرایش سفر: $e');
+      // _showSnack('خطا: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -238,31 +241,6 @@ class _EditTripScreenState extends State<EditTripScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError
-                  ? Icons.error_outline_rounded
-                  : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(msg)),
-          ],
-        ),
-        backgroundColor: isError
-            ? AppColors.errorColor
-            : const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

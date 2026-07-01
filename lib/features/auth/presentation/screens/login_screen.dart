@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/auth/data/services/auth_service.dart';
 import 'package:tripsync/features/auth/presentation/widgets/auth_hero.dart';
 import 'dart:ui';
@@ -50,19 +51,16 @@ class _LoginScreenState extends State<LoginScreen>
       await _authService.signIn(email: email, password: password);
 
       if (mounted) {
+        SnackbarHelper.showSuccess(context, 'خوش آمدید!');
         context.go('/home');
       }
     } on AuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
+        SnackbarHelper.showError(context, 'ایمیل یا رمز عبور اشتباه است ');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطای غیرمنتظره: $e')));
+        SnackbarHelper.showError(context, 'خطای غیرمنتظره رخ داد');
       }
     } finally {
       if (mounted) {
@@ -123,15 +121,13 @@ class _LoginScreenState extends State<LoginScreen>
                   child: SlideTransition(
                     position: _slideAnim,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 5,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          AuthHero(imageSize: 145),
-                          const SizedBox(height: 140),
+                          const SizedBox(height: 60),
+                          const AuthHero(),
+                          const SizedBox(height: 50),
                           LoginForm(
                             onLogin: _handleLogin,
                             isLoading: _isLoading,
