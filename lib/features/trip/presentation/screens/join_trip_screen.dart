@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 
 class JoinTripScreen extends StatefulWidget {
@@ -78,24 +79,7 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: AppColors.primaryColor.withValues(alpha: 0.9),
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          automaticallyImplyLeading: false,
-          title: const Text(
-            'پیوستن به سفر',
-            style: TextStyle(
-              color: AppColors.backgroundColor,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: AppColors.borderColor),
-          ),
-        ),
+        appBar: AppPrimaryAppBar(title: 'پیوستن به سفر'),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),

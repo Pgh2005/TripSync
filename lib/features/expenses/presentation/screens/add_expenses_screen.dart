@@ -9,10 +9,10 @@ import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
 import 'package:tripsync/core/utils/money_input_formatter.dart';
 import 'package:tripsync/core/utils/money_parsing.dart';
+import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
-import 'package:tripsync/features/expenses/presentation/widgets/appbar_primary.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/expense_form_widgets.dart';
 import 'package:tripsync/features/trip/data/models/trip_member_model.dart';
 import 'package:tripsync/features/trip/presentation/widget/date_picker/persian_date_picker_sheet.dart';
@@ -448,15 +448,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Text(
-                    'فقط پرداخت‌کننده می‌تواند اطلاعات هزینه را ویرایش کند',
-                    style: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontWeight: FontWeight.w500,
+                  if (!_canEditExpense)
+                    Text(
+                      'فقط پرداخت‌کننده می‌تواند اطلاعات هزینه را ویرایش کند',
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 10),
                 ],
               ),
             ),

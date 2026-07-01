@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/money_formatter.dart';
+import 'package:tripsync/core/widgets/appbar_primary.dart';
+import 'package:tripsync/features/balance_calculation/presentation/providers/balance_providers.dart';
+import 'package:tripsync/features/expenses/presentation/providers/expense_split_provider.dart';
 import '../providers/expense_provider.dart';
 import '../widgets/expense_list_item.dart';
 
@@ -19,7 +22,7 @@ class TripExpensesScreen extends ConsumerWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: _buildAppBar(context, ref),
+        appBar: AppPrimaryAppBar(title: 'جزئیات هزینه‌ها'),
         body: expensesAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primaryColor),
@@ -27,9 +30,11 @@ class TripExpensesScreen extends ConsumerWidget {
           error: (error, stackTrace) => _ErrorState(
             message: 'خطا در دریافت هزینه‌ها',
             detail: error.toString(),
-            onRetry: () {
-              ref.invalidate(expenseListProvider(tripId));
+            onRetry: () async {
+              final _ = await ref.refresh(expenseListProvider(tripId).future);
+              final _ = await ref.refresh(expenseSplitsProvider(tripId).future);
               ref.invalidate(expenseTotalProvider(tripId));
+              ref.invalidate(settlementsProvider(tripId));
             },
           ),
           data: (expenses) {
@@ -40,18 +45,27 @@ class TripExpensesScreen extends ConsumerWidget {
 
             if (expenses.isEmpty) {
               return _EmptyState(
-                onRefresh: () {
-                  ref.invalidate(expenseListProvider(tripId));
+                onRefresh: () async {
+                  final _ = await ref.refresh(
+                    expenseListProvider(tripId).future,
+                  );
+                  final _ = await ref.refresh(
+                    expenseSplitsProvider(tripId).future,
+                  );
                   ref.invalidate(expenseTotalProvider(tripId));
+                  ref.invalidate(settlementsProvider(tripId));
                 },
               );
             }
 
             return RefreshIndicator(
               onRefresh: () async {
-                ref.invalidate(expenseListProvider(tripId));
+                final _ = await ref.refresh(expenseListProvider(tripId).future);
+                final _ = await ref.refresh(
+                  expenseSplitsProvider(tripId).future,
+                );
                 ref.invalidate(expenseTotalProvider(tripId));
-                await ref.read(expenseListProvider(tripId).future);
+                ref.invalidate(settlementsProvider(tripId));
               },
               color: AppColors.primaryColor,
               child: ListView.separated(
@@ -63,6 +77,7 @@ class TripExpensesScreen extends ConsumerWidget {
                     return _ExpenseTotalHeader(
                       total: total,
                       count: expenses.length,
+                      tripId: tripId,
                     );
                   }
                   final expense = expenses[index - 1];
@@ -82,29 +97,6 @@ class TripExpensesScreen extends ConsumerWidget {
         ),
         floatingActionButton: _buildFab(context),
         floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
-    return AppBar(
-      backgroundColor: AppColors.primaryColor.withValues(alpha: 0.95),
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      title: const Text(
-        'جزئیات هزینه‌ها',
-        style: TextStyle(
-          color: AppColors.backgroundColor,
-          fontSize: 17,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
-        ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: AppColors.borderColor),
       ),
     );
   }
@@ -152,8 +144,13 @@ class TripExpensesScreen extends ConsumerWidget {
 class _ExpenseTotalHeader extends StatelessWidget {
   final double total;
   final int count;
+  final String tripId;
 
-  const _ExpenseTotalHeader({required this.total, required this.count});
+  const _ExpenseTotalHeader({
+    required this.total,
+    required this.count,
+    required this.tripId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +237,51 @@ class _ExpenseTotalHeader extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.92),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              InkWell(
+                onTap: () {
+                  context.pushNamed(
+                    'settlement',
+                    pathParameters: {'tripId': tripId},
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(
+                      alpha: 0.15,
+                    ), // پس‌زمینه نیمه‌شفاف شیشه‌ای
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calculate_outlined, // یا Icons.sync_alt_rounded
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'محاسبه و تسویه حساب اعضا',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

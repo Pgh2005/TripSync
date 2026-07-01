@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 import 'package:tripsync/features/trip/presentation/widget/date_picker/persian_date_picker_sheet.dart';
 
@@ -108,7 +109,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
-        appBar: _buildAppBar(),
+        appBar: AppPrimaryAppBar(title: 'ایجاد سفر جدید'),
         body: FadeTransition(
           opacity: _fadeAnim,
           child: SlideTransition(
@@ -141,30 +142,6 @@ class _CreateTripScreenState extends State<CreateTripScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ── AppBar ───────────────────────────────────────────────────────
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.primaryColor.withValues(alpha: 0.9),
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      automaticallyImplyLeading: false,
-      title: const Text(
-        'ایجاد سفر جدید',
-        style: TextStyle(
-          color: AppColors.backgroundColor,
-          fontSize: 17,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
-        ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: AppColors.borderColor),
       ),
     );
   }
