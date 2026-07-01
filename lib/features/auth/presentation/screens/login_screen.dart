@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'خطای غیرمنتظره رخ داد');
+        SnackbarHelper.showError(context, 'خطای غیرمنتظره رخ داد : ${e}');
       }
     } finally {
       if (mounted) {
@@ -124,13 +124,15 @@ class _LoginScreenState extends State<LoginScreen>
                   child: SlideTransition(
                     position: _slideAnim,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 5,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 60),
-                          const AuthHero(),
-                          const SizedBox(height: 50),
+                          AuthHero(imageSize: 145),
+                          const SizedBox(height: 140),
                           LoginForm(
                             onLogin: _handleLogin,
                             isLoading: _isLoading,
