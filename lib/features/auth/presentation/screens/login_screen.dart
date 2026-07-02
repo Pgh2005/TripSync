@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'خطای غیرمنتظره رخ داد : ${e}');
+        SnackbarHelper.showError(context, 'خطای غیرمنتظره رخ داد : $e');
       }
     } finally {
       if (mounted) {
