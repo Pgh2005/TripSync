@@ -12,8 +12,13 @@ final tripMarkersProvider =
 class TripMarkersNotifier extends StateNotifier<List<TripMarkerModel>> {
   TripMarkersNotifier() : super([]);
 
-  void addMarker(LatLng position) {
-    final marker = TripMarkerModel(id: _generateId(), position: position);
+  void addMarker({required LatLng position, required String title}) {
+    final marker = TripMarkerModel(
+      id: _generateId(),
+      position: position,
+      title: title,
+      createdAt: DateTime.now(),
+    );
 
     state = [...state, marker];
   }

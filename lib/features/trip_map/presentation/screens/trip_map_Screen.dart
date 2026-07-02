@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/widgets/appbar_primary.dart';
+import 'package:tripsync/features/trip_map/presentation/widgets/add_marker_sheet.dart';
+import 'package:tripsync/features/trip_map/presentation/widgets/marker_info_sheet.dart';
 
 import '../providers/trip_map_provider.dart';
 
@@ -14,13 +17,18 @@ class TripMapScreen extends ConsumerWidget {
     final markers = ref.watch(tripMarkersProvider);
 
     return Scaffold(
-      appBar: AppPrimaryAppBar(title: 'Trip Map'),
+      appBar: const AppPrimaryAppBar(title: 'نقشه سفر'),
       body: FlutterMap(
         options: MapOptions(
-          initialCenter: const LatLng(36.2605, 59.6168), // Mashhad
+          initialCenter: const LatLng(36.2605, 59.6168), // مشهد
           initialZoom: 13,
-          onTap: (tapPosition, point) {
-            ref.read(tripMarkersProvider.notifier).addMarker(point);
+          onLongPress: (tapPosition, point) {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => AddMarkerSheet(point: point),
+            );
           },
         ),
         children: [
@@ -34,10 +42,19 @@ class TripMapScreen extends ConsumerWidget {
                 point: tripMarker.position,
                 width: 40,
                 height: 40,
-                child: const Icon(
-                  Icons.location_on,
-                  color: Colors.red,
-                  size: 40,
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => MarkerInfoSheet(title: tripMarker.title),
+                    );
+                  },
+                  child: const Icon(
+                    Icons.location_on,
+                    color: AppColors.markercolor,
+                    size: 40,
+                  ),
                 ),
               );
             }).toList(),
