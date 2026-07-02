@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
+import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/core/widgets/appbar_primary.dart';
 import 'package:tripsync/features/trip_map/presentation/widgets/add_marker_sheet.dart';
 import 'package:tripsync/features/trip_map/presentation/widgets/marker_info_sheet.dart';
@@ -47,7 +49,26 @@ class TripMapScreen extends ConsumerWidget {
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: Colors.transparent,
-                      builder: (_) => MarkerInfoSheet(title: tripMarker.title),
+                      builder: (_) => MarkerInfoSheet(
+                        title: tripMarker.title,
+                        onDelete: () {
+                          try {
+                            ref
+                                .read(tripMarkersProvider.notifier)
+                                .removeMarker(tripMarker.id);
+                            context.pop(true);
+                            SnackbarHelper.showSuccess(
+                              context,
+                              'با موفقیت حذف شد',
+                            );
+                          } catch (e) {
+                            SnackbarHelper.showError(
+                              context,
+                              'به مشکل برخورد کردید، لطفا دوباره امتحان کنید',
+                            );
+                          }
+                        },
+                      ),
                     );
                   },
                   child: const Icon(
