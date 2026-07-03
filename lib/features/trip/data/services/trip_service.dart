@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/utils/invite_code_generator.dart';
-import 'package:tripsync/features/trip/data/models/member_model.dart';
+import 'package:tripsync/features/trip/data/models/trip_member_model.dart';
 import '../models/trip_model.dart';
 
 class TripService {
@@ -53,7 +53,7 @@ class TripService {
         .toList();
   }
 
-  Future<List<MemberModel>> getTripMembers(String tripId) async {
+  Future<List<TripMemberModel>> getTripMembers(String tripId) async {
     final response = await _supabase
         .from('trip_members')
         .select('profiles(*)')
@@ -61,7 +61,7 @@ class TripService {
 
     return (response as List)
         .where((item) => item['profiles'] != null)
-        .map((item) => MemberModel.fromJson(item['profiles']))
+        .map((item) => TripMemberModel.fromJson(item['profiles']))
         .toList();
   }
 

@@ -3,8 +3,8 @@ import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
+import 'package:tripsync/features/trip/data/models/trip_member_model.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
-import 'package:tripsync/features/trip/data/models/member_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 import 'package:tripsync/features/trip/presentation/widget/date_picker/persian_date_picker_sheet.dart';
 
@@ -28,7 +28,7 @@ class _EditTripScreenState extends State<EditTripScreen>
   DateTime? _startDate;
   bool _isSaving = false;
 
-  List<MemberModel> _members = [];
+  List<TripMemberModel> _members = [];
   bool _isLoadingMembers = true;
 
   late AnimationController _animController;
@@ -119,7 +119,7 @@ class _EditTripScreenState extends State<EditTripScreen>
   }
 
   // ── حذف عضو ─────────────────────────────────────────────────────
-  Future<void> _removeMember(MemberModel member) async {
+  Future<void> _removeMember(TripMemberModel member) async {
     final confirmed = await _showRemoveDialog(member.fullName);
     if (confirmed != true || !mounted) return;
 
@@ -612,7 +612,7 @@ class _EditTripScreenState extends State<EditTripScreen>
     );
   }
 
-  Widget _buildMemberTile(MemberModel member, int index) {
+  Widget _buildMemberTile(TripMemberModel member, int index) {
     final avatarColors = [
       AppColors.primaryColor,
       const Color(0xFF0891B2),

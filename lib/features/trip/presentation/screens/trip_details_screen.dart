@@ -6,8 +6,8 @@ import 'package:tripsync/core/theme/app_colors.dart';
 import 'package:tripsync/core/utils/app_date_formatter.dart';
 import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/expenses/presentation/widgets/expense_summary_card.dart';
+import 'package:tripsync/features/trip/data/models/trip_member_model.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
-import 'package:tripsync/features/trip/data/models/member_model.dart';
 import 'package:tripsync/features/trip/data/services/trip_service.dart';
 
 class TripDetailScreen extends StatefulWidget {
@@ -27,7 +27,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   late TripModel _trip;
 
   final TripService _tripService = TripService();
-  List<MemberModel> _members = [];
+  List<TripMemberModel> _members = [];
   bool _isLoadingMembers = true;
 
   bool get _isOwner {
@@ -212,7 +212,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     }
   }
 
-  Future<bool> _confirmRemoveMember(MemberModel member) async {
+  Future<bool> _confirmRemoveMember(TripMemberModel member) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => Directionality(
@@ -335,7 +335,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     return confirmed == true;
   }
 
-  Future<void> _removeMember(MemberModel member) async {
+  Future<void> _removeMember(TripMemberModel member) async {
     if (!_isOwner || member.id == _trip.createdBy) return;
 
     final confirmed = await _confirmRemoveMember(member);
@@ -685,7 +685,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  Widget _buildMemberListItem(MemberModel member, int index) {
+  Widget _buildMemberListItem(TripMemberModel member, int index) {
     final isTripOwnerMember = member.id == _trip.createdBy;
     final canRemoveMember = _isOwner && !isTripOwnerMember;
     final memberTile = _buildMemberTile(member, index);
@@ -744,7 +744,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  Widget _buildMemberTile(MemberModel member, int index) {
+  Widget _buildMemberTile(TripMemberModel member, int index) {
     final isTripOwner = member.id == _trip.createdBy;
     final avatarColors = [
       AppColors.primaryColor,
