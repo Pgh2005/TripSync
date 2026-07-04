@@ -40,6 +40,7 @@ class _JoinTripScreenState extends State<JoinTripScreen> {
       final trip = await _tripService.getTripByInviteCode(code);
 
       if (trip == null) {
+        if (!mounted) return;
         SnackbarHelper.showError(context, 'کد دعوت معتبر نیست');
         setState(() => _isLoading = false);
         return;

@@ -84,8 +84,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       SnackbarHelper.showError(context, 'خطا در دریافت اطلاعات پروفایل: $e');
     } finally {
-      if (!mounted) return;
-
       setState(() => _isLoading = false);
       _animController.forward();
     }

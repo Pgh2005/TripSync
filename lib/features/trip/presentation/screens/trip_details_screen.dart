@@ -592,6 +592,63 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             label: 'تعداد اعضا',
             value: '${_members.length} نفر',
           ),
+          // route to map screen . just for test and i should improve ui
+          _infoDivider(),
+          GestureDetector(
+            onTap: () {
+              context.pushNamed(
+                'trip-map',
+                pathParameters: {'tripId': widget.trip.id},
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              margin: EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(31, 3, 188, 244),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.map_rounded,
+                      color: const Color.fromARGB(255, 11, 117, 255),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'نقشه مسیر',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'نمایش نقشه',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

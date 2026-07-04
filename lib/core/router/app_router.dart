@@ -6,13 +6,14 @@ import 'package:tripsync/features/balance_calculation/presentation/screens/balan
 import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/presentation/screens/add_expenses_screen.dart';
 import 'package:tripsync/features/expenses/presentation/screens/trip_expenses_screen.dart';
-import 'package:tripsync/features/profile/presentation/ProfileScreen.dart';
+import 'package:tripsync/features/profile/presentation/profile_screen.dart';
 import 'package:tripsync/features/trip/data/models/trip_model.dart';
-import 'package:tripsync/features/trip/presentation/screens/EditTripScreen.dart';
+import 'package:tripsync/features/trip/presentation/screens/edit_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/create_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/home_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/join_trip_screen.dart';
 import 'package:tripsync/features/trip/presentation/screens/trip_details_screen.dart';
+import 'package:tripsync/features/trip_map/presentation/screens/trip_map_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -92,6 +93,16 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final tripId = state.pathParameters['tripId']!;
         return BalancePage(tripId: tripId, tripName: 'سفر');
+      },
+    ),
+
+    /// Trip Map - trip centric
+    GoRoute(
+      path: '/trip/:tripId/map',
+      name: 'trip-map',
+      builder: (context, state) {
+        final tripId = state.pathParameters['tripId']!;
+        return TripMapScreen(tripId: tripId);
       },
     ),
   ],

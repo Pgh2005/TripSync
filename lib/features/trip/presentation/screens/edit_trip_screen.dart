@@ -126,7 +126,7 @@ class _EditTripScreenState extends State<EditTripScreen>
     // try {
     //   await _tripService.removeMember(
     //     tripId: widget.trip.id,
-    //     userId: member.userId,
+    //     memberId: member.id,
     //   );
     //   setState(() => _members.removeWhere((m) => m.userId == member.userId));
     //   _showSnack('عضو با موفقیت حذف شد');
