@@ -1,5 +1,5 @@
 name: tripsync
-description: "A new Flutter project."
+description: "A new Flutter project for trip planning."
 publish_to: "none"
 
 version: 1.0.0+1
@@ -35,6 +35,8 @@ dependencies:
   share_plus: ^13.1.0
   equatable: ^2.0.8
   awesome_snackbar_content: ^0.1.4
+  image_picker: ^1.2.3
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:

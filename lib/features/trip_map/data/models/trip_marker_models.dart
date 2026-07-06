@@ -8,8 +8,9 @@ class TripMarkerModel {
   final double longitude;
   final MarkerVisibility visibility;
   final DateTime createdAt;
+  final String? title; // این فیلد جدید را اضافه کن
 
-  const TripMarkerModel({
+  TripMarkerModel({
     required this.id,
     required this.tripId,
     required this.createdBy,
@@ -17,22 +18,26 @@ class TripMarkerModel {
     required this.longitude,
     required this.visibility,
     required this.createdAt,
+    this.title, // در کانستراکتور اضافه کن
   });
 
+  // آپدیت fromJson
   factory TripMarkerModel.fromJson(Map<String, dynamic> json) {
     return TripMarkerModel(
-      id: json['id'] as String,
-      tripId: json['trip_id'] as String,
-      createdBy: json['created_by'] as String,
+      id: json['id'],
+      tripId: json['trip_id'],
+      createdBy: json['created_by'],
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       visibility: MarkerVisibilityX.fromValue(
         json['visibility'] as String? ?? 'trip_shared',
       ),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at']),
+      title: json['title'], // خواندن از دیتابیس
     );
   }
 
+  // آپدیت toJson
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -42,9 +47,11 @@ class TripMarkerModel {
       'longitude': longitude,
       'visibility': visibility.value,
       'created_at': createdAt.toIso8601String(),
+      'title': title, 
     };
   }
 
+  // آپدیت copyWith (خیلی مهم!)
   TripMarkerModel copyWith({
     String? id,
     String? tripId,
@@ -53,6 +60,7 @@ class TripMarkerModel {
     double? longitude,
     MarkerVisibility? visibility,
     DateTime? createdAt,
+    String? title,
   }) {
     return TripMarkerModel(
       id: id ?? this.id,
@@ -62,6 +70,7 @@ class TripMarkerModel {
       longitude: longitude ?? this.longitude,
       visibility: visibility ?? this.visibility,
       createdAt: createdAt ?? this.createdAt,
+      title: title ?? this.title,
     );
   }
 }

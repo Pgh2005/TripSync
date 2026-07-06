@@ -47,6 +47,7 @@ class TripMapRepository {
     required double latitude,
     required double longitude,
     required MarkerVisibility visibility,
+    String? title,
   }) async {
     final response = await _supabase
         .from('trip_markers')
@@ -56,6 +57,7 @@ class TripMapRepository {
           'latitude': latitude,
           'longitude': longitude,
           'visibility': visibility.value,
+          'title': title,
         })
         .select()
         .single();

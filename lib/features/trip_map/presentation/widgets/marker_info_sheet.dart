@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/utils/snackbar_helper.dart';
-
+import 'package:tripsync/features/trip_map/presentation/providers/marker_media_service_provider.dart';
 import '../../../../core/enums/marker_visibility.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/trip_marker_models.dart';
@@ -52,7 +52,7 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
           child: AlertDialog(
             title: const Text('حذف مکان'),
             content: const Text(
-              'آیا مطمئن هستی که می‌خواهی این مارکر حذف شود؟',
+              'آیا مطمئن هستی که می‌خواهی این مارکر حذف شود؟ با حذف مارکر تمامی عکس‌های آن نیز حذف خواهند شد.',
             ),
             actions: [
               TextButton(
@@ -84,11 +84,9 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
       if (!mounted) return;
 
       context.pop(true);
-
       SnackbarHelper.showSuccess(context, 'مکان حذف شد');
     } catch (e) {
       if (!mounted) return;
-
       SnackbarHelper.showError(context, 'خطا در حذف مکان: $e');
     } finally {
       if (mounted) {
@@ -97,6 +95,42 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
         });
       }
     }
+  }
+
+  // متد کمکی برای نمایش عکس‌ها به صورت بزرگنمایی شده (Full Screen Dialog)
+  void _showImagePreview(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(imageUrl, fit: BoxFit.contain),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildInfoTile({
@@ -156,8 +190,13 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final lat = widget.marker.latitude.toStringAsFixed(6);
-    final lng = widget.marker.longitude.toStringAsFixed(6);
+    // خواندن تصاویر مربوط به این مارکر به کمک Riverpod FutureProvider
+    final imagesAsyncValue = ref.watch(markerImagesProvider(widget.marker.id));
+
+    // فرض بر این است که فیلد title یا نامی روی مدل مارکر وجود دارد؛ در غیر این صورت فیلد مناسب جایگزین شود.
+    final markerTitle = widget.marker.title?.isNotEmpty == true
+        ? widget.marker.title!
+        : 'بدون عنوان';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -170,115 +209,212 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.borderColor,
-                      borderRadius: BorderRadius.circular(100),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.borderColor,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                Row(
-                  children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          color: AppColors.markercolor,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          markerTitle,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // بخش تصاویر ثبت‌شده مارکر
+                  imagesAsyncValue.when(
+                    data: (urls) {
+                      if (urls.isEmpty) {
+                        return const SizedBox.shrink(); // اگر عکسی نبود چیزی نمایش ندهد
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'تصاویر ثبت‌شده',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 120,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: urls.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: GestureDetector(
+                                    onTap: () => _showImagePreview(urls[index]),
+                                    child: Hero(
+                                      tag: urls[index],
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.network(
+                                          urls[index],
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Container(
+                                                  width: 120,
+                                                  height: 120,
+                                                  color:
+                                                      AppColors.backgroundColor,
+                                                  child: const Center(
+                                                    child: SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                          errorBuilder:
+                                              (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) => Container(
+                                                width: 120,
+                                                height: 120,
+                                                color:
+                                                    AppColors.backgroundColor,
+                                                child: const Icon(
+                                                  Icons.broken_image_outlined,
+                                                  color: AppColors.textMuted,
+                                                ),
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    },
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (err, stack) => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10.0),
+                      child: Text(
+                        'خطا در بارگذاری تصاویر مکان',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ),
+
+                  _buildInfoTile(
+                    icon: Icons.visibility_rounded,
+                    label: 'سطح نمایش مکان',
+                    value: _visibilityLabel,
+                    iconColor: AppColors.primaryColor,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  if (_canDelete)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isDeleting ? null : _deleteMarker,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent),
+                          foregroundColor: Colors.redAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: _isDeleting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.redAccent,
+                                ),
+                              )
+                            : const Icon(Icons.delete_outline_rounded),
+                        label: Text(_isDeleting ? 'در حال حذف...' : 'حذف مکان'),
+                      ),
+                    )
+                  else
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.backgroundColor,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderColor),
                       ),
-                      child: const Icon(
-                        Icons.location_on_rounded,
-                        color: AppColors.markercolor,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'جزئیات مکان ثبت‌شده',
+                      child: const Text(
+                        'فقط ایجادکننده مارکر دسترسی حذف دارد.',
                         style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
+                          fontSize: 13,
+                          color: AppColors.textMuted,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                _buildInfoTile(
-                  icon: Icons.visibility_rounded,
-                  label: 'سطح نمایش',
-                  value: _visibilityLabel,
-                  iconColor: AppColors.primaryColor,
-                ),
-                const SizedBox(height: 12),
-
-                _buildInfoTile(
-                  icon: Icons.pin_drop_rounded,
-                  label: 'مختصات',
-                  value: '$lat , $lng',
-                  iconColor: AppColors.markercolor,
-                ),
-
-                const SizedBox(height: 24),
-
-                if (_canDelete)
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _isDeleting ? null : _deleteMarker,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.redAccent),
-                        foregroundColor: Colors.redAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      icon: _isDeleting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.redAccent,
-                              ),
-                            )
-                          : const Icon(Icons.delete_outline_rounded),
-                      label: Text(_isDeleting ? 'در حال حذف...' : 'حذف مکان'),
-                    ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderColor),
-                    ),
-                    child: const Text(
-                      'فقط سازنده‌ی این مارکر می‌تواند آن را حذف کند.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
