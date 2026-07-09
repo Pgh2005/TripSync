@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/utils/snackbar_helper.dart';
 import 'package:tripsync/features/trip_map/presentation/providers/marker_media_service_provider.dart';
+import 'package:tripsync/features/trip_map/presentation/widgets/add_marker_sheet.dart';
+import 'package:tripsync/features/trip_map/presentation/widgets/trip_map_status_banner.dart';
 import '../../../../core/enums/marker_visibility.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/trip_marker_models.dart';
@@ -26,8 +29,14 @@ class MarkerInfoSheet extends ConsumerStatefulWidget {
 
 class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
   bool _isDeleting = false;
+  String? _errorText;
 
   bool get _canDelete {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    return currentUserId != null && currentUserId == widget.marker.createdBy;
+  }
+
+  bool get _canEdit {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     return currentUserId != null && currentUserId == widget.marker.createdBy;
   }
@@ -39,6 +48,38 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
       case MarkerVisibility.tripShared:
         return 'مشترک در سفر';
     }
+  }
+
+  String _mapDeleteError(Object error) {
+    final raw = error.toString();
+
+    if (raw.contains('SocketException') ||
+        raw.contains('network') ||
+        raw.contains('Network')) {
+      return 'اتصال اینترنت برقرار نیست. حذف انجام نشد.';
+    }
+
+    if (raw.contains('row-level security') || raw.contains('42501')) {
+      return 'اجازه حذف این مکان را نداری.';
+    }
+
+    return 'حذف مکان انجام نشد. دوباره تلاش کن.';
+  }
+
+  Future<void> _openEditMarkerSheet() async {
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => AddMarkerSheet(
+        tripId: widget.tripId,
+        point: LatLng(widget.marker.latitude, widget.marker.longitude),
+        initialMarker: widget.marker,
+      ),
+    );
+
+    if (!mounted || result != true) return;
+    Navigator.of(context).pop(true);
   }
 
   Future<void> _deleteMarker() async {
@@ -73,21 +114,22 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
 
     setState(() {
       _isDeleting = true;
+      _errorText = null;
     });
 
     try {
       final repository = ref.read(tripMapRepositoryProvider);
       await repository.deleteMarker(widget.marker.id);
-
       ref.invalidate(tripMarkersProvider(widget.tripId));
 
       if (!mounted) return;
-
+      SnackbarHelper.showSuccess(context, 'مکان با موفقیت حذف شد');
       context.pop(true);
-      SnackbarHelper.showSuccess(context, 'مکان حذف شد');
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      SnackbarHelper.showError(context, 'خطا در حذف مکان: $e');
+      setState(() {
+        _errorText = _mapDeleteError(error);
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -97,7 +139,6 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
     }
   }
 
-  // متد کمکی برای نمایش عکس‌ها به صورت بزرگنمایی شده (Full Screen Dialog)
   void _showImagePreview(String imageUrl) {
     showDialog(
       context: context,
@@ -190,10 +231,7 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // خواندن تصاویر مربوط به این مارکر به کمک Riverpod FutureProvider
     final imagesAsyncValue = ref.watch(markerImagesProvider(widget.marker.id));
-
-    // فرض بر این است که فیلد title یا نامی روی مدل مارکر وجود دارد؛ در غیر این صورت فیلد مناسب جایگزین شود.
     final markerTitle = widget.marker.title?.isNotEmpty == true
         ? widget.marker.title!
         : 'بدون عنوان';
@@ -224,9 +262,14 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
+                  if (_errorText != null) ...[
+                    TripMapStatusBanner(
+                      text: _errorText!,
+                      backgroundColor: Colors.redAccent.withValues(alpha: 0.92),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Row(
                     children: [
                       Container(
@@ -254,15 +297,10 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
-                  // بخش تصاویر ثبت‌شده مارکر
                   imagesAsyncValue.when(
                     data: (urls) {
-                      if (urls.isEmpty) {
-                        return const SizedBox.shrink(); // اگر عکسی نبود چیزی نمایش ندهد
-                      }
+                      if (urls.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -282,7 +320,7 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
                               itemCount: urls.length,
                               itemBuilder: (context, index) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(left: 10.0),
+                                  padding: const EdgeInsets.only(left: 10),
                                   child: GestureDetector(
                                     onTap: () => _showImagePreview(urls[index]),
                                     child: Hero(
@@ -348,27 +386,44 @@ class _MarkerInfoSheetState extends ConsumerState<MarkerInfoSheet> {
                       );
                     },
                     loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
+                      padding: EdgeInsets.symmetric(vertical: 20),
                       child: Center(child: CircularProgressIndicator()),
                     ),
                     error: (err, stack) => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10.0),
+                      padding: EdgeInsets.symmetric(vertical: 10),
                       child: Text(
                         'خطا در بارگذاری تصاویر مکان',
                         style: TextStyle(color: Colors.redAccent),
                       ),
                     ),
                   ),
-
                   _buildInfoTile(
                     icon: Icons.visibility_rounded,
                     label: 'سطح نمایش مکان',
                     value: _visibilityLabel,
                     iconColor: AppColors.primaryColor,
                   ),
-
                   const SizedBox(height: 24),
-
+                  if (_canEdit) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isDeleting ? null : _openEditMarkerSheet,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('ویرایش مکان'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (_canDelete)
                     SizedBox(
                       width: double.infinity,

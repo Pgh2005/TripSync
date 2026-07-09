@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/utils/snackbar_helper.dart';
+import 'package:tripsync/features/trip_map/data/models/trip_marker_models.dart';
 import 'package:tripsync/features/trip_map/presentation/providers/marker_media_service_provider.dart';
+import 'package:tripsync/features/trip_map/presentation/widgets/trip_map_status_banner.dart';
 import '../../../../core/enums/marker_media_type.dart';
 import '../../../../core/enums/marker_visibility.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -16,8 +18,16 @@ import '../providers/trip_markers_provider.dart';
 class AddMarkerSheet extends ConsumerStatefulWidget {
   final String tripId;
   final LatLng point;
+  final TripMarkerModel? initialMarker;
 
-  const AddMarkerSheet({super.key, required this.tripId, required this.point});
+  const AddMarkerSheet({
+    super.key,
+    required this.tripId,
+    required this.point,
+    this.initialMarker,
+  });
+
+  bool get isEditMode => initialMarker != null;
 
   @override
   ConsumerState<AddMarkerSheet> createState() => _AddMarkerSheetState();
@@ -28,10 +38,20 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
   MarkerVisibility _visibility = MarkerVisibility.tripShared;
   bool _isSaving = false;
   String _loadingMessage = 'ثبت مکان...';
+  String? _errorText;
 
-  // لیست فایل‌های انتخاب شده موقت
   final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    final marker = widget.initialMarker;
+    if (marker != null) {
+      _titleController.text = marker.title ?? '';
+      _visibility = marker.visibility;
+    }
+  }
 
   @override
   void dispose() {
@@ -39,25 +59,44 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
     super.dispose();
   }
 
-  // متد انتخاب تصاویر از گالری
+  String _mapSaveError(Object error) {
+    final raw = error.toString();
+
+    if (raw.contains('SocketException') ||
+        raw.contains('network') ||
+        raw.contains('Network')) {
+      return 'اتصال اینترنت برقرار نیست. دوباره تلاش کن.';
+    }
+
+    if (raw.contains('permission') || raw.contains('Permission')) {
+      return 'دسترسی لازم برای این عملیات وجود ندارد.';
+    }
+
+    if (raw.contains('row-level security') || raw.contains('42501')) {
+      return 'اجازه انجام این عملیات را نداری.';
+    }
+
+    return 'ذخیره‌سازی انجام نشد. دوباره تلاش کن.';
+  }
+
   Future<void> _pickImages() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 80, // فشرده‌سازی جزئی جهت بهینه‌سازی آپلود
-      );
+      final images = await _picker.pickMultiImage(imageQuality: 80);
 
-      if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(images.map((xFile) => File(xFile.path)));
-        });
-      }
-    } catch (e) {
+      if (images.isEmpty) return;
+
+      setState(() {
+        _errorText = null;
+        _selectedImages.addAll(images.map((xFile) => File(xFile.path)));
+      });
+    } catch (error) {
       if (!mounted) return;
-      SnackbarHelper.showError(context, 'خطا در انتخاب تصاویر: $e');
+      setState(() {
+        _errorText = 'خطا در انتخاب تصاویر. دوباره تلاش کن.';
+      });
     }
   }
 
-  // متد حذف یک تصویر از لیست موقت پیش‌نمایش
   void _removeImage(int index) {
     setState(() {
       _selectedImages.removeAt(index);
@@ -76,12 +115,30 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
 
     setState(() {
       _isSaving = true;
-      _loadingMessage = 'در حال ثبت مکان اولیه...';
+      _errorText = null;
+      _loadingMessage = widget.isEditMode
+          ? 'در حال ذخیره تغییرات...'
+          : 'در حال ثبت مکان اولیه...';
     });
 
     try {
       final repository = ref.read(tripMapRepositoryProvider);
       final mediaService = ref.read(markerMediaServiceProvider);
+
+      if (widget.isEditMode) {
+        await repository.updateMarker(
+          markerId: widget.initialMarker!.id,
+          title: _titleController.text.trim(),
+          visibility: _visibility,
+        );
+
+        ref.invalidate(tripMarkersProvider(widget.tripId));
+
+        if (!mounted) return;
+        SnackbarHelper.showSuccess(context, 'تغییرات مکان ذخیره شد');
+        Navigator.of(context).pop(true);
+        return;
+      }
 
       final createdMarker = await repository.createMarker(
         tripId: widget.tripId,
@@ -89,22 +146,23 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
         latitude: widget.point.latitude,
         longitude: widget.point.longitude,
         visibility: _visibility,
-        title: _titleController.text.trim(), // این خط را اضافه کن
+        title: _titleController.text.trim().isEmpty
+            ? null
+            : _titleController.text.trim(),
       );
 
-      // ۲. آپلود عکس‌ها (در صورت وجود)
       if (_selectedImages.isNotEmpty) {
-        for (int i = 0; i < _selectedImages.length; i++) {
+        for (int index = 0; index < _selectedImages.length; index++) {
           if (!mounted) return;
           setState(() {
             _loadingMessage =
-                'آپلود تصویر ${i + 1} از ${_selectedImages.length}...';
+                'آپلود تصویر ${index + 1} از ${_selectedImages.length}...';
           });
 
           await mediaService.uploadMedia(
             markerId: createdMarker.id,
             createdBy: user.id,
-            file: _selectedImages[i],
+            file: _selectedImages[index],
             type: MarkerMediaType.image,
             visibility: _visibility,
           );
@@ -114,15 +172,13 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
       ref.invalidate(tripMarkersProvider(widget.tripId));
 
       if (!mounted) return;
-
       SnackbarHelper.showSuccess(context, 'مکان و تصاویر با موفقیت ثبت شدند');
       context.pop(true);
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      debugPrint('Error saving marker or uploading media: $e');
-      SnackbarHelper.showError(context, 'خطا در ثبت اطلاعات: $e');
-
+      debugPrint('Error saving marker or uploading media: $error');
       setState(() {
+        _errorText = _mapSaveError(error);
         _isSaving = false;
       });
     }
@@ -200,7 +256,6 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                 ],
               ),
             ),
-
             Radio<MarkerVisibility>(value: value),
           ],
         ),
@@ -211,6 +266,7 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isEditMode = widget.isEditMode;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -239,27 +295,43 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'ثبت مکان جدید',
-                    style: TextStyle(
+                  Text(
+                    isEditMode ? 'ویرایش مکان' : 'ثبت مکان جدید',
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'یک مارکر جدید برای این سفر ثبت می‌شود. همچنین می‌توانید عکس‌های مربوط به این موقعیت را اضافه کنید.',
-                    style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+                  Text(
+                    isEditMode
+                        ? 'عنوان و سطح نمایش این مکان را ویرایش کن.'
+                        : 'یک مارکر جدید برای این سفر ثبت می‌شود. همچنین می‌توانید عکس‌های مربوط به این موقعیت را اضافه کنید.',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  if (_errorText != null) ...[
+                    TripMapStatusBanner(
+                      text: _errorText!,
+                      backgroundColor: Colors.redAccent.withValues(alpha: 0.92),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   TextField(
                     controller: _titleController,
                     textDirection: TextDirection.rtl,
                     decoration: InputDecoration(
-                      labelText: 'عنوان اولیه (اختیاری)',
+                      labelText: isEditMode
+                          ? 'عنوان مکان'
+                          : 'عنوان اولیه (اختیاری)',
                       hintText: 'مثلاً: هتل، کافه، ساحل...',
-                      helperText: 'این عنوان به عنوان داده موقت ثبت می‌شود.',
+                      helperText: isEditMode
+                          ? 'عنوان جدید مکان را وارد کن.'
+                          : 'این عنوان برای نمایش مارکر استفاده می‌شود.',
                       filled: true,
                       fillColor: AppColors.backgroundColor,
                       contentPadding: const EdgeInsets.symmetric(
@@ -283,96 +355,89 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // بخش مدیریت عکس‌ها
-                  const Text(
-                    'تصاویر موقعیت مکانی',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                  if (!isEditMode) ...[
+                    const Text(
+                      'تصاویر موقعیت مکانی',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // اسکرول افقی تصاویر انتخاب شده
-                  SizedBox(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _selectedImages.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == _selectedImages.length) {
-                          // دکمه اضافه کردن عکس جدید
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: InkWell(
-                              onTap: _isSaving ? null : _pickImages,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                width: 100,
-                                decoration: BoxDecoration(
-                                  color: AppColors.backgroundColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: AppColors.borderColor,
-                                    style: BorderStyle.solid,
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _selectedImages.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == _selectedImages.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: InkWell(
+                                onTap: _isSaving ? null : _pickImages,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: 100,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.backgroundColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.borderColor,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    color: AppColors.primaryColor,
+                                    size: 32,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.add_photo_alternate_outlined,
-                                  color: AppColors.primaryColor,
-                                  size: 32,
-                                ),
                               ),
-                            ),
-                          );
-                        }
+                            );
+                          }
 
-                        // کارت نمایش پیش‌نمایش تصویر به همراه دکمه حذف
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.file(
-                                  _selectedImages[index],
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.file(
+                                    _selectedImages[index],
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
-                              ),
-                              if (!_isSaving)
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      padding: const EdgeInsets.all(4),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 14,
+                                if (!_isSaving)
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _removeImage(index),
+                                      child: Container(
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        padding: const EdgeInsets.all(4),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 14,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
                   const Text(
                     'سطح نمایش',
                     style: TextStyle(
@@ -381,7 +446,6 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                       color: AppColors.textDark,
                     ),
                   ),
-
                   RadioGroup<MarkerVisibility>(
                     groupValue: _visibility,
                     onChanged: (MarkerVisibility? newValue) {
@@ -448,9 +512,9 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                                 ),
                               ],
                             )
-                          : const Text(
-                              'ثبت مکان',
-                              style: TextStyle(
+                          : Text(
+                              isEditMode ? 'ذخیره تغییرات' : 'ثبت مکان',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),

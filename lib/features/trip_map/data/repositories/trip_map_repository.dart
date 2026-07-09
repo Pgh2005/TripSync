@@ -68,4 +68,26 @@ class TripMapRepository {
   Future<void> deleteMarker(String markerId) async {
     await _supabase.from('trip_markers').delete().eq('id', markerId);
   }
+
+  Future<TripMarkerModel> updateMarker({
+    required String markerId,
+    required String title,
+    required MarkerVisibility visibility,
+  }) async {
+    final response = await _supabase
+        .from('trip_markers')
+        .update({
+          'title': title.trim().isEmpty ? null : title.trim(),
+          'visibility': visibility.value,
+        })
+        .eq('id', markerId)
+        .select()
+        .maybeSingle();
+
+    if (response == null) {
+      throw Exception('مارکر برای ویرایش پیدا نشد');
+    }
+
+    return TripMarkerModel.fromJson(response);
+  }
 }
