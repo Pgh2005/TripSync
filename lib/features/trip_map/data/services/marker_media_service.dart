@@ -11,7 +11,6 @@ class MarkerMediaService {
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
-
   static const String _bucketName = 'marker-media';
 
   Future<MarkerMediaModel> uploadMedia({
@@ -22,10 +21,8 @@ class MarkerMediaService {
     required MarkerVisibility visibility,
   }) async {
     final mediaId = const Uuid().v4();
-
     final extension = _fileExtension(file.path);
     final fileName = extension.isEmpty ? mediaId : '$mediaId.$extension';
-
     final storagePath = 'markers/$markerId/$fileName';
 
     await _client.storage
@@ -52,32 +49,63 @@ class MarkerMediaService {
     );
 
     await _client.from('marker_media').insert(media.toJson());
-
     return media;
+  }
+
+  // متد جامع برای گرفتن هر نوع مدیا (عکس یا صوت)
+  Future<List<MarkerMediaModel>> getMarkerMedia(
+    String markerId,
+    MarkerMediaType type,
+  ) async {
+    try {
+      final response = await _client
+          .from('marker_media')
+          .select()
+          .eq('marker_id', markerId)
+          .eq('type', type.value); // استفاده از extension شما
+
+      return (response as List<dynamic>)
+          .map((e) => MarkerMediaModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching marker media ($type): $e');
+      return [];
+    }
+  }
+
+  // برای سازگاری با کدهای قبلی
+  Future<List<String?>> getMarkerImages(String markerId) async {
+    final mediaList = await getMarkerMedia(markerId, MarkerMediaType.image);
+    return mediaList.map((m) => m.remoteUrl).toList();
+  }
+
+  Future<void> deleteAllMediaForMarker(String markerId) async {
+    try {
+      final response = await _client
+          .from('marker_media')
+          .select('storage_path')
+          .eq('marker_id', markerId);
+
+      final List<String> paths = (response as List<dynamic>)
+          .map((item) => item['storage_path'] as String?)
+          .where((path) => path != null && path.trim().isNotEmpty)
+          .cast<String>()
+          .toList();
+
+      if (paths.isNotEmpty) {
+        await _client.storage.from(_bucketName).remove(paths);
+      }
+
+      await _client.from('marker_media').delete().eq('marker_id', markerId);
+    } catch (e) {
+      debugPrint('Error deleting marker media for marker $markerId: $e');
+      rethrow;
+    }
   }
 
   String _fileExtension(String path) {
     final lastDot = path.lastIndexOf('.');
-    if (lastDot == -1 || lastDot == path.length - 1) {
-      return '';
-    }
+    if (lastDot == -1 || lastDot == path.length - 1) return '';
     return path.substring(lastDot + 1).toLowerCase();
-  }
-
-  // در کلاس MarkerMediaService
-  Future<List<String>> getMarkerImages(String markerId) async {
-    try {
-      final response = await _client
-          .from('marker_media')
-          .select('remote_url')
-          .eq('marker_id', markerId)
-          .eq('type', 'image'); // فقط فیلتر روی عکس‌ها
-
-      final List<dynamic> data = response as List<dynamic>;
-      return data.map((item) => item['remote_url'] as String).toList();
-    } catch (e) {
-      debugPrint('Error fetching marker images: $e');
-      return [];
-    }
   }
 }

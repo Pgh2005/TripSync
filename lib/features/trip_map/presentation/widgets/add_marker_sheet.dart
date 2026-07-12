@@ -14,6 +14,8 @@ import '../../../../core/enums/marker_visibility.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/trip_map_repository_provider.dart';
 import '../providers/trip_markers_provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 class AddMarkerSheet extends ConsumerStatefulWidget {
   final String tripId;
@@ -39,9 +41,13 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
   bool _isSaving = false;
   String _loadingMessage = 'ثبت مکان...';
   String? _errorText;
-
+  // Images
   final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+  // Audio
+  final List<File> _selectedAudios = [];
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -56,6 +62,7 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
   @override
   void dispose() {
     _titleController.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -150,7 +157,7 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
             ? null
             : _titleController.text.trim(),
       );
-
+      // Upload images
       if (_selectedImages.isNotEmpty) {
         for (int index = 0; index < _selectedImages.length; index++) {
           if (!mounted) return;
@@ -168,11 +175,33 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
           );
         }
       }
+      // Upload Audio
+      if (_selectedAudios.isNotEmpty) {
+        for (int index = 0; index < _selectedAudios.length; index++) {
+          if (!mounted) return;
+          setState(() {
+            _loadingMessage =
+                'آپلود صوت ${index + 1} از ${_selectedAudios.length}...';
+          });
+
+          await mediaService.uploadMedia(
+            markerId: createdMarker.id,
+            createdBy: user.id,
+            file: _selectedAudios[index],
+            type: MarkerMediaType.audio,
+            visibility: _visibility,
+          );
+        }
+      }
 
       ref.invalidate(tripMarkersProvider(widget.tripId));
 
       if (!mounted) return;
-      SnackbarHelper.showSuccess(context, 'مکان و تصاویر با موفقیت ثبت شدند');
+      SnackbarHelper.showSuccess(
+        context,
+        'مکان و فایل‌های رسانه‌ای با موفقیت ثبت شدند',
+      );
+
       context.pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -182,6 +211,72 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
         _isSaving = false;
       });
     }
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      final hasPermission = await _audioRecorder.hasPermission();
+      if (!hasPermission) {
+        setState(() {
+          _errorText = 'دسترسی میکروفون داده نشده است.';
+        });
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final filePath =
+          '${tempDir.path}/marker_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: filePath,
+      );
+
+      setState(() {
+        _errorText = null;
+        _isRecording = true;
+      });
+    } catch (error) {
+      setState(() {
+        _errorText = 'شروع ضبط صدا ناموفق بود.';
+        _isRecording = false;
+      });
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      final path = await _audioRecorder.stop();
+
+      if (path == null || path.isEmpty) {
+        setState(() {
+          _isRecording = false;
+          _errorText = 'فایل صوتی ذخیره نشد.';
+        });
+        return;
+      }
+
+      setState(() {
+        _isRecording = false;
+        _errorText = null;
+        _selectedAudios.add(File(path));
+      });
+    } catch (error) {
+      setState(() {
+        _isRecording = false;
+        _errorText = 'توقف ضبط صدا ناموفق بود.';
+      });
+    }
+  }
+
+  void _removeAudio(int index) {
+    setState(() {
+      _selectedAudios.removeAt(index);
+    });
   }
 
   Widget _buildVisibilityCard({
@@ -438,6 +533,117 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                     ),
                     const SizedBox(height: 20),
                   ],
+
+                  const Text(
+                    'صوت‌های موقعیت مکانی',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTapDown: _isSaving ? null : (_) => _startRecording(),
+                    onTapUp: _isSaving ? null : (_) => _stopRecording(),
+                    onTapCancel: _isSaving ? null : _stopRecording,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _isRecording
+                            ? Colors.redAccent.withValues(alpha: 0.12)
+                            : AppColors.backgroundColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: _isRecording
+                              ? Colors.redAccent
+                              : AppColors.borderColor,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isRecording ? Icons.mic : Icons.mic_none_outlined,
+                            color: _isRecording
+                                ? Colors.redAccent
+                                : AppColors.primaryColor,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _isRecording
+                                  ? 'در حال ضبط... انگشتت را رها کن تا ذخیره شود'
+                                  : 'برای ضبط صدا لمس کن و نگه دار',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _isRecording
+                                    ? Colors.redAccent
+                                    : AppColors.textDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Audio Section
+                  const SizedBox(height: 12),
+                  if (_selectedAudios.isNotEmpty)
+                    Column(
+                      children: List.generate(_selectedAudios.length, (index) {
+                        final audioFile = _selectedAudios[index];
+                        final fileName = audioFile.path.split('/').last;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundColor,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.borderColor),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.audio_file_outlined,
+                                color: AppColors.primaryColor,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  fileName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
+                              ),
+                              if (!_isSaving)
+                                GestureDetector(
+                                  onTap: () => _removeAudio(index),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
+                  const SizedBox(height: 20),
+
                   const Text(
                     'سطح نمایش',
                     style: TextStyle(

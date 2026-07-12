@@ -2,11 +2,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tripsync/core/enums/marker_filter.dart';
 import 'package:tripsync/core/enums/marker_visibility.dart';
 import 'package:tripsync/features/trip_map/data/models/trip_marker_models.dart';
+import 'package:tripsync/features/trip_map/data/services/marker_media_service.dart';
 
 class TripMapRepository {
   final SupabaseClient _supabase;
+  final MarkerMediaService _markerMediaService;
 
-  TripMapRepository(this._supabase);
+  TripMapRepository(this._supabase, {MarkerMediaService? markerMediaService})
+    : _markerMediaService =
+          markerMediaService ?? MarkerMediaService(client: _supabase);
 
   Future<List<TripMarkerModel>> getMarkersByTrip({
     required String tripId,
@@ -66,6 +70,7 @@ class TripMapRepository {
   }
 
   Future<void> deleteMarker(String markerId) async {
+    await _markerMediaService.deleteAllMediaForMarker(markerId);
     await _supabase.from('trip_markers').delete().eq('id', markerId);
   }
 
