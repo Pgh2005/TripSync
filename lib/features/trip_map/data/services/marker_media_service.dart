@@ -103,6 +103,17 @@ class MarkerMediaService {
     }
   }
 
+  Future<void> deleteSingleMedia({
+    required String mediaId,
+    String? storagePath,
+  }) async {
+    if (storagePath != null && storagePath.trim().isNotEmpty) {
+      await _client.storage.from(_bucketName).remove([storagePath]);
+    }
+
+    await _client.from('marker_media').delete().eq('id', mediaId);
+  }
+
   String _fileExtension(String path) {
     final lastDot = path.lastIndexOf('.');
     if (lastDot == -1 || lastDot == path.length - 1) return '';
