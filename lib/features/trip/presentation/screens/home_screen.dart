@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<TripModel> _trips = [];
   bool _isLoading = true;
+  String? _errorMessage; // متغیر جدید برای رهگیری خطاها
   String _userName = '';
 
   @override
@@ -36,25 +37,55 @@ class _HomeScreenState extends State<HomeScreen> {
           .select('full_name')
           .eq('id', user.id)
           .single();
-      setState(() => _userName = profile['full_name'] ?? '');
+      if (mounted) {
+        setState(() => _userName = profile['full_name'] ?? '');
+      }
     } catch (e) {
       debugPrint(e.toString());
     }
+  }
+
+  // تشخیص خطای عدم اتصال به شبکه
+  String _mapErrorToMessage(Object error) {
+    final raw = error.toString();
+    if (raw.contains('SocketException') ||
+        raw.contains('Failed host lookup') ||
+        raw.contains('Network is unreachable') ||
+        raw.contains('ClientException') ||
+        raw.contains('connection')) {
+      return 'اتصال اینترنت برقرار نیست. لطفاً شبکه خود را بررسی کن.';
+    }
+    return 'دریافت اطلاعات ناموفق بود. لطفاً دوباره تلاش کن.';
   }
 
   Future<void> _loadTrips() async {
     try {
       final trips = await _tripService.getUserTrips();
-      setState(() => _trips = trips);
+      if (mounted) {
+        setState(() {
+          _trips = trips;
+          _errorMessage = null; // پاک کردن خطاهای قبلی در صورت موفقیت
+        });
+      }
     } catch (e) {
       debugPrint(e.toString());
+      if (mounted) {
+        setState(() {
+          _errorMessage = _mapErrorToMessage(e);
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _refresh() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     await _loadProfile();
     await _loadTrips();
   }
@@ -67,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: _refresh,
         color: AppColors.primaryColor,
         child: CustomScrollView(
+          physics:
+              const AlwaysScrollableScrollPhysics(), // فعال نگه‌داشتن اسکرول برای انجام رفرش حتی در حالت خطا
           slivers: [
             // ── SliverAppBar ──────────────────────────────────────
             SliverAppBar(
@@ -102,8 +135,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       delegate: SliverChildListDelegate([
                         _buildSectionTitle(),
                         const SizedBox(height: 16),
-                        if (_trips.isEmpty)
-                          _buildEmptyState()
+                        if (_errorMessage != null)
+                          _buildErrorState() // نمایش وضعیت خطا
+                        else if (_trips.isEmpty)
+                          _buildEmptyState() // نمایش وضعیت خالی بودن واقعی لیست
                         else
                           ..._trips.map(
                             (trip) => TripCard(
@@ -145,7 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
@@ -191,7 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // آواتار
           Container(
             width: 46,
             height: 46,
@@ -269,7 +302,68 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── حالت خالی ────────────────────────────────────────────────────
+  // ── حالت خطا و قطعی شبکه ──────────────────────────────────────────
+  Widget _buildErrorState() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.redAccent.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              size: 38,
+              color: Colors.redAccent,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage ?? 'خطایی رخ داده است',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _refresh,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
+            label: const Text('تلاش مجدد'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── حالت خالی بودن واقعی لیست ──────────────────────────────────────
   Widget _buildEmptyState() {
     return Container(
       margin: const EdgeInsets.only(top: 8),

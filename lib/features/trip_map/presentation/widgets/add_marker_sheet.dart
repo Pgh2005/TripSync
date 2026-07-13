@@ -505,6 +505,7 @@ class _AddMarkerSheetState extends ConsumerState<AddMarkerSheet> {
                   TextField(
                     controller: _titleController,
                     textDirection: TextDirection.rtl,
+                    style: const TextStyle(color: AppColors.textDark),
                     decoration: InputDecoration(
                       labelText: isEditMode
                           ? 'عنوان مکان'
