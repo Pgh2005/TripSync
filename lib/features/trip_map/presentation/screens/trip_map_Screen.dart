@@ -261,14 +261,20 @@ class _TripMapScreenState extends ConsumerState<TripMapScreen> {
   }
 
   Future<void> _openMarkerInfoSheet(TripMarkerModel marker) async {
-    await showModalBottomSheet(
+    await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return MarkerInfoSheet(marker: marker, tripId: widget.tripId);
+        return FractionallySizedBox(
+          heightFactor: 0.8,
+          child: MarkerInfoSheet(marker: marker, tripId: widget.tripId),
+        );
       },
     );
 
+    if (!mounted) return;
     ref.invalidate(tripMarkersProvider(widget.tripId));
   }
 
