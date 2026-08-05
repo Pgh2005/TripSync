@@ -2,7 +2,7 @@ import 'package:tripsync/features/expenses/data/models/expense_model.dart';
 import 'package:tripsync/features/expenses/data/models/expense_split_model.dart';
 import 'package:tripsync/features/trip/data/models/trip_member_model.dart';
 
-import '../data/models/settlement.dart';
+import '../models/settlement.dart';
 
 class BalanceCalculator {
   /// ورودی:
@@ -52,7 +52,7 @@ class BalanceCalculator {
       }
     });
 
-    // سورت برای بهینه‌سازی تعداد تراکنش‌ها
+    // مرتب کردن برای بهینه‌سازی تعداد تراکنش‌ها
     debtors.sort((a, b) => a.value.compareTo(b.value));
     creditors.sort((a, b) => b.value.compareTo(a.value));
 

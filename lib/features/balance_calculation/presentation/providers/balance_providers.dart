@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:tripsync/features/expenses/presentation/providers/expense_split_provider.dart';
 import 'package:tripsync/features/expenses/presentation/providers/trip_members_provider.dart';
-import '../../services/balance_calculator.dart';
+import '../../data/services/balance_calculator.dart';
 import '../../data/models/settlement.dart';
 
 final settlementsProvider =
