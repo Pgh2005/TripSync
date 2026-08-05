@@ -18,20 +18,20 @@ class AppColors {
   static const Color errorColor = Color(0xFFFF6B6B);
   static const Color successColor = Color(0xFF10B981);
 
-  // ── Category Colors (برای هزینه‌ها، تگ‌ها و...) ─────────────────
-  static const Color categoryFood = Color(0xFFF59E0B); // غذا
+  // Category Colors
+  static const Color categoryFood = Color(0xFFF59E0B);
   static const Color categoryFoodBg = Color(0xFFFFFBEB);
 
-  static const Color categoryTransport = Color(0xFF0891B2); // حمل‌ونقل
+  static const Color categoryTransport = Color(0xFF0891B2);
   static const Color categoryTransportBg = Color(0xFFECFEFF);
 
-  static const Color categoryHotel = Color(0xFF7C3AED); // اقامت
+  static const Color categoryHotel = Color(0xFF7C3AED);
   static const Color categoryHotelBg = Color(0xFFF5F3FF);
 
-  static const Color categoryShopping = Color(0xFF059669); // خرید
+  static const Color categoryShopping = Color(0xFF059669);
   static const Color categoryShoppingBg = Color(0xFFECFDF5);
 
-  static const Color categoryOther = Color(0xFFDB2777); // سایر
+  static const Color categoryOther = Color(0xFFDB2777);
   static const Color categoryOtherBg = Color(0xFFFDF2F8);
 
   static const Color markercolor = Color.fromARGB(255, 240, 13, 13);
